@@ -1,10 +1,23 @@
-# Taken directly from https://github.com/ambv/black/blob/master/.flake8
+# .flake8
 [flake8]
+# Ignore specific error codes
 ignore = E203, E266, E501, W503, C901, D104, D100
+# Black-compatible line length
 max-line-length = 88
+# Complexity threshold for cyclomatic complexity
 max-complexity = 18
+# Error codes to consider
 select = B,C,E,F,W,T4,B9,D
+# Enable extensions for additional checks
 enable-extensions = flake8-docstrings
+# Per-file ignores (specific exceptions for test files)
 per-file-ignores =
     tests/**:D101,D102,D103
+# Docstring style convention
 docstring-convention = numpy
+
+# Include additional plugins
+additional-dependencies =
+    flake8-bugbear
+    flake8-comprehensions
+    flake8-annotations
