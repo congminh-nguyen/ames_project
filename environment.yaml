@@ -1,0 +1,34 @@
+name: iowa_dream
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+ # defaults
+  - python>=3.8
+  - pip
+  - pre-commit
+  - pytest>=6  # Adds --import-mode option
+  - pytest-cov
+  - setuptools-scm
+  # data
+  - pandas
+  - polars
+  - numpy
+  - dask-ml
+  - pydantic
+  - yaml
+  # interactive
+  - ipykernel
+  - jupyterlab
+  # plots
+  - matplotlib
+  - seaborn
+  # ml
+  - glum
+  - lightgbm
+  - scikit-learn
+  - shap
+  # additional dependencies from file context
+  - pathlib
+  - kaggle
+  - typing

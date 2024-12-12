@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools", "wheel", "setuptools_scm", "build"]  # Build requirements
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iowa_dream"
+dynamic = ["version"]
+description = "A Python package for predicting housing prices in Ames, Iowa."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [
+    { name = "3387G", email = "NA" }
+]
+keywords = ["housing prices", "prediction tasks", "machine learning"]
+classifiers = [
+    "Intended Audience :: Assessment",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3"
+]
+
+[tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "no-local-version"
+write_to = "iowa_dream/version.py"
+
+[tool.black]
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+include_trailing_comma = true
+ensure_newline_before_comments = true
+line_length = 88
+known_first_party = "ps3"
+skip_glob = '\.eggs/*,\.git/*,\.venv/*,build/*,dist/*'
+default_section = 'THIRDPARTY'
+
+[tool.mypy]
+python_version = '3.8'
+ignore_missing_imports = true
+no_implicit_optional = true
+check_untyped_defs = true
+
+
+[tool.docformatter]
+pre-summary-newline = true
+recursive = true
+wrap-descriptions = 88
+wrap-summaries = 88
+
+[tool.pytest.ini_options]
+# This will be pytest's future default.
+addopts = "--import-mode=importlib --cov=iowa_dream"
+pythonpath="."
