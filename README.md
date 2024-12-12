@@ -75,7 +75,7 @@ iowa_dream/
 
 ### **1. Clone the Repository**  
 ```bash
-git clone https://github.com/congminh-nguyen/iowa_dream.git
+git clone https://github.com/congminh-nguyen/ames_project.git
 cd iowa_dream
 ```
 
