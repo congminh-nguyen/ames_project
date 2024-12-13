@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 
-def load_and_clean_data(data_file: Path) -> pd.DataFrame:
+def preliminary_load_and_clean_data(data_file: Path) -> pd.DataFrame:
     """
     Load CSV data and standardize column names.
 
@@ -34,9 +34,5 @@ def load_and_clean_data(data_file: Path) -> pd.DataFrame:
 
     # Rename the columns using the mapping
     df = df.rename(columns=column_mapping)
-
-    print("\nVerifying new column names:")
-    for col in df.columns:
-        print(f"- {col}")
 
     return df
