@@ -1,4 +1,4 @@
 kaggle:
   api_key_path: "~/.kaggle/kaggle.json"
   dataset: "shashanknecrothapa/ames-housing-dataset"
-  download_path: "./iowa_dream/data/_rawfile"
+  download_path: "./iowa_dream/_rawfile"
