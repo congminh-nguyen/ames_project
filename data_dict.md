@@ -402,7 +402,7 @@ Tab characters are used to separate variables in the data file. The data has 82 
   - `BuiltIn`: Built-In (Garage part of house - typically has room above garage)
   - `CarPort`: Car Port
   - `Detchd`: Detached from home
-  - `NA`: Missing
+  - `No Garage`: No Garage
 - **GarageFinish (Ordinal)**: Interior finish of the garage:
   - `Fin`: Finished
   - `RFn`: Rough Finished

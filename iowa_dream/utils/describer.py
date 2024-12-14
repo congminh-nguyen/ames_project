@@ -163,3 +163,63 @@ def numerical_describer(df: pd.DataFrame, numerical_columns: list) -> pd.DataFra
     print(f"Columns with missing values: {(total > 0).sum()}")
 
     return column_analysis
+
+
+def analyze_categorical_sparsity(
+    df: pd.DataFrame, threshold_dominant: float = 0.95, threshold_rare: float = 0.01
+) -> pd.DataFrame:
+    """
+    Analyze categorical features for sparsity and imbalanced distributions.
+
+    Identifies features with dominant categories and rare categories based on specified thresholds.
+    Calculates distribution statistics for each categorical feature.
+
+    Args:
+        df: Input DataFrame to analyze
+        threshold_dominant: Threshold for flagging features with a dominant category (default 0.9)
+        threshold_rare: Threshold for flagging rare categories (default 0.05)
+
+    Returns:
+        DataFrame containing analysis results with columns:
+        - Feature: Name of categorical feature
+        - Unique Values: Number of unique categories
+        - Most Common: Most frequent category
+        - Most Common %: Percentage of most frequent category
+        - Least Common: Least frequent category
+        - Least Common %: Percentage of least frequent category
+        - Has Dominant: Whether feature has a dominant category
+        - Rare Categories: Number of rare categories
+    """
+    results = []
+
+    for col in df.select_dtypes(include=["object"]).columns:
+        # Handle missing values by excluding them from percentage calculation
+        value_counts = df[col].value_counts(normalize=True, dropna=True)
+        n_categories = len(value_counts)
+        max_freq = value_counts.max()
+        min_freq = value_counts.min()
+
+        # Check for dominant category (>threshold_dominant)
+        dominant_category = max_freq > threshold_dominant
+
+        # Check for rare categories (<threshold_rare)
+        rare_categories = value_counts[value_counts < threshold_rare]
+
+        results.append(
+            {
+                "Feature": col,
+                "Unique Values": n_categories,
+                "Most Common": value_counts.index[0],
+                "Most Common %": max_freq * 100,
+                "Least Common": value_counts.index[-1],
+                "Least Common %": min_freq * 100,
+                "Has Dominant": dominant_category,
+                "Rare Categories": len(rare_categories),
+            }
+        )
+
+    return (
+        pd.DataFrame(results)
+        .sort_values(["Has Dominant", "Rare Categories"], ascending=False)
+        .reset_index(drop=True)
+    )

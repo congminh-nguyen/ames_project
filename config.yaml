@@ -74,7 +74,7 @@ data_dict:
       - mo_sold
       - year_sold
   continuous_columns:
-    count: 20
+    count: 19
     columns:
       - lot_frontage
       - lot_area
@@ -95,6 +95,7 @@ data_dict:
       - screen_porch
       - pool_area
       - misc_val
+  continuous_target:
       - saleprice
   identifiers:
     - pid

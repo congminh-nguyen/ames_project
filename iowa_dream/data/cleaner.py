@@ -1,23 +1,29 @@
-from typing import List
+from typing import List, Optional
 
 import pandas as pd
 
 
-def convert_numerical_column_types(
-    df: pd.DataFrame, discrete_cols: List[str], continuous_cols: List[str]
+def type_formatting(
+    df: pd.DataFrame,
+    discrete_cols: List[str],
+    continuous_cols: List[str],
+    nominal_cols: Optional[List[str]] = None,
 ) -> pd.DataFrame:
     """
-    Convert column types based on their nature: discrete or continuous.
-    For continuous columns that are integers, convert to float.
-    For discrete columns that are floats, convert to integer.
+    Convert column types based on their nature:
+    - Convert continuous integer columns to float
+    - Convert discrete float columns to integer
+    - Convert nominal numeric columns to string category
     Ignore NaN values during conversion.
 
     Args:
-        df: pandas DataFrame
-        discrete_cols: list of discrete column names
-        continuous_cols: list of continuous column names
+        df (pd.DataFrame): Input DataFrame
+        discrete_cols (List[str]): List of discrete numeric columns
+        continuous_cols (List[str]): List of continuous numeric columns
+        nominal_cols (Optional[List[str]]): List of nominal categorical columns
+
     Returns:
-        DataFrame with converted column types
+        pd.DataFrame: DataFrame with converted column types
     """
     df_converted = df.copy()
 
@@ -30,6 +36,11 @@ def convert_numerical_column_types(
             df_converted[col] = df_converted[col].astype(
                 "Int64"
             )  # Use 'Int64' to handle NaNs
+
+    if nominal_cols:
+        for col in nominal_cols:
+            if pd.api.types.is_numeric_dtype(df_converted[col]):
+                df_converted[col] = df_converted[col].astype(str)
 
     return df_converted
 
@@ -67,3 +78,48 @@ def simple_fill_missing_by_keywords(
             df_filled[col] = df[col].fillna(0)
 
     return df_filled
+
+
+def garage_imputer(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Impute garage-related features in a specific order:
+    1. Redenote 'No Garage' garage_type as 'NA'
+    2. Fill missing garage_type with 'NA'
+    3. Fix typo in garage_year_blt
+    4. Fill missing garage_year_blt with year_blt
+    5. Fill missing garage quality metrics with 'NA'
+    6. Fill missing numeric values with 0 only for houses with no garage or detached garage
+
+    Args:
+        df: DataFrame containing garage-related columns
+
+    Returns:
+        DataFrame with imputed garage values
+    """
+    # Make a copy to avoid modifying original
+    df = df.copy()
+
+    # 1. Redenote 'No Garage' garage_type as 'NA'
+    df.loc[df["garage_type"] == "No Garage", "garage_type"] = "NA"
+
+    # 2. Fill missing garage_type with 'NA'
+    df["garage_type"] = df["garage_type"].fillna("NA")
+
+    # 3. Fix typo in garage_year_blt from 2207 to 2007
+    df.loc[df["garage_year_blt"] == 2207, "garage_year_blt"] = 2007
+
+    # 4. Fill missing garage_year_blt with year_blt
+    df.loc[df["garage_year_blt"].isnull(), "garage_year_blt"] = df.loc[
+        df["garage_year_blt"].isnull(), "year_blt"
+    ]
+
+    # 5. Fill missing garage quality metrics with 'NA'
+    for col in ["garage_finish", "garage_qu", "garage_cond"]:
+        df[col] = df[col].fillna("NA")
+
+    # 6. For houses with no garage or detached garage, fill missing numeric values with 0
+    mask = df["garage_type"].isin(["NA", "Detchd"])
+    for col in ["garage_cars", "garage_area"]:
+        df.loc[mask & df[col].isnull(), col] = 0
+
+    return df
