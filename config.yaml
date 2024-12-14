@@ -2,3 +2,99 @@ kaggle:
   api_key_path: "~/.kaggle/kaggle.json"
   dataset: "shashanknecrothapa/ames-housing-dataset"
   download_path: "./iowa_dream/_rawfile"
+
+data_dict:
+  ordinal_columns:
+    count: 23
+    columns:
+      - lot_shape
+      - utilities
+      - land_slope
+      - overall_qu
+      - overall_cond
+      - exter_qu
+      - exter_cond
+      - bsmt_qu
+      - bsmt_cond
+      - bsmt_exposure
+      - bsmtfin_type_1
+      - bsmtfin_type_2
+      - heating_qu
+      - electrical
+      - kitchen_qu
+      - functional
+      - fireplace_qu
+      - garage_finish
+      - garage_qu
+      - garage_cond
+      - paved_drive
+      - pool_qu
+      - fence
+  nominal_columns:
+    count: 23
+    columns:
+      - ms_subclass
+      - ms_zoning
+      - street
+      - alley
+      - land_contour
+      - lot_config
+      - neighborhood
+      - condition_1
+      - condition_2
+      - bldg_type
+      - house_style
+      - roof_style
+      - roof_matl
+      - exterior_1st
+      - exterior_2nd
+      - mas_vnr_type
+      - foundation
+      - heating
+      - central_air
+      - garage_type
+      - sale_type
+      - sale_condition
+      - misc_feature
+  discrete_columns:
+    count: 14
+    columns:
+      - year_blt
+      - year_remod/add
+      - bsmt_full_bath
+      - bsmt_half_bath
+      - full_bath
+      - half_bath
+      - bedroom_abvgr
+      - kitchen_abvgr
+      - totrms_abvgr
+      - fireplaces
+      - garage_year_blt
+      - garage_cars
+      - mo_sold
+      - year_sold
+  continuous_columns:
+    count: 20
+    columns:
+      - lot_frontage
+      - lot_area
+      - mas_vnr_area
+      - bsmtfin_sf_1
+      - bsmtfin_sf_2
+      - bsmt_unf_sf
+      - total_bsmt_sf
+      - 1st_flr_sf
+      - 2nd_flr_sf
+      - low_qu_fin_sf
+      - gr_liv_area
+      - garage_area
+      - wood_deck_sf
+      - open_porch_sf
+      - enclosed_porch
+      - 3ssn_porch
+      - screen_porch
+      - pool_area
+      - misc_val
+      - saleprice
+  identifiers:
+    - pid

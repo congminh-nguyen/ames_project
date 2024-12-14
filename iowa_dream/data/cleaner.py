@@ -1,38 +1,69 @@
-from pathlib import Path
+from typing import List
 
 import pandas as pd
 
 
-def preliminary_load_and_clean_data(data_file: Path) -> pd.DataFrame:
+def convert_numerical_column_types(
+    df: pd.DataFrame, discrete_cols: List[str], continuous_cols: List[str]
+) -> pd.DataFrame:
     """
-    Load CSV data and standardize column names.
+    Convert column types based on their nature: discrete or continuous.
+    For continuous columns that are integers, convert to float.
+    For discrete columns that are floats, convert to integer.
+    Ignore NaN values during conversion.
 
     Args:
-        data_file (Path): Path to the CSV file to load
-
+        df: pandas DataFrame
+        discrete_cols: list of discrete column names
+        continuous_cols: list of continuous column names
     Returns:
-        pd.DataFrame: DataFrame with standardized column names
+        DataFrame with converted column types
     """
-    df = pd.read_csv(data_file.resolve())
+    df_converted = df.copy()
 
-    # Create a mapping of old column names to new standardized names
-    column_mapping = {}
-    for col in df.columns:
-        # Convert to lowercase
-        new_name = col.lower()
-        # Replace spaces with underscores
-        new_name = new_name.replace(" ", "_")
-        # Replace special characters with underscores
-        new_name = "".join(c if c.isalnum() or c == "_" else "_" for c in new_name)
-        # Remove consecutive underscores
-        while "__" in new_name:
-            new_name = new_name.replace("__", "_")
-        # Remove trailing underscores
-        new_name = new_name.rstrip("_")
+    for col in continuous_cols:
+        if pd.api.types.is_integer_dtype(df_converted[col].dropna()):
+            df_converted[col] = df_converted[col].astype(float)
 
-        column_mapping[col] = new_name
+    for col in discrete_cols:
+        if pd.api.types.is_float_dtype(df_converted[col].dropna()):
+            df_converted[col] = df_converted[col].astype(
+                "Int64"
+            )  # Use 'Int64' to handle NaNs
 
-    # Rename the columns using the mapping
-    df = df.rename(columns=column_mapping)
+    return df_converted
 
-    return df
+
+def simple_fill_missing_by_keywords(
+    df: pd.DataFrame, keywords: List[str]
+) -> pd.DataFrame:
+    """
+    Fill missing values in columns containing any of the given keywords.
+    For categorical columns, fills with 'NA'.
+    For numeric columns, fills with 0.
+
+    Args:
+        df: pandas DataFrame
+        keywords: list of strings to match in column names
+    Returns:
+        DataFrame with filled missing values
+    """
+    # Make a copy to avoid modifying original
+    df_filled = df.copy()
+
+    # Get columns containing any of the keywords
+    cols_to_fill = []
+    for keyword in keywords:
+        cols_to_fill.extend(
+            [col for col in df.columns if keyword.lower() in col.lower()]
+        )
+    cols_to_fill = list(set(cols_to_fill))  # Remove duplicates
+
+    for col in cols_to_fill:
+        # Fill based on data type
+        if df[col].dtype == "object":
+            df_filled[col] = df[col].fillna("NA")
+        else:
+            df_filled[col] = df[col].fillna(0)
+
+    return df_filled
