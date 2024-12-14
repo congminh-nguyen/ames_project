@@ -20,6 +20,7 @@ dependencies:
   # interactive
   - ipykernel
   - jupyterlab
+  - ipywidgets
   # plots
   - matplotlib
   - seaborn

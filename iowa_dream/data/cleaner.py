@@ -1,42 +1,125 @@
-from pathlib import Path
+from typing import List, Optional
 
 import pandas as pd
 
 
-def load_and_clean_data(data_file: Path) -> pd.DataFrame:
+def type_formatting(
+    df: pd.DataFrame,
+    discrete_cols: List[str],
+    continuous_cols: List[str],
+    nominal_cols: Optional[List[str]] = None,
+) -> pd.DataFrame:
     """
-    Load CSV data and standardize column names.
+    Convert column types based on their nature:
+    - Convert continuous integer columns to float
+    - Convert discrete float columns to integer
+    - Convert nominal numeric columns to string category
+    Ignore NaN values during conversion.
 
     Args:
-        data_file (Path): Path to the CSV file to load
+        df (pd.DataFrame): Input DataFrame
+        discrete_cols (List[str]): List of discrete numeric columns
+        continuous_cols (List[str]): List of continuous numeric columns
+        nominal_cols (Optional[List[str]]): List of nominal categorical columns
 
     Returns:
-        pd.DataFrame: DataFrame with standardized column names
+        pd.DataFrame: DataFrame with converted column types
     """
-    df = pd.read_csv(data_file.resolve())
+    df_converted = df.copy()
 
-    # Create a mapping of old column names to new standardized names
-    column_mapping = {}
-    for col in df.columns:
-        # Convert to lowercase
-        new_name = col.lower()
-        # Replace spaces with underscores
-        new_name = new_name.replace(" ", "_")
-        # Replace special characters with underscores
-        new_name = "".join(c if c.isalnum() or c == "_" else "_" for c in new_name)
-        # Remove consecutive underscores
-        while "__" in new_name:
-            new_name = new_name.replace("__", "_")
-        # Remove trailing underscores
-        new_name = new_name.rstrip("_")
+    for col in continuous_cols:
+        if pd.api.types.is_integer_dtype(df_converted[col].dropna()):
+            df_converted[col] = df_converted[col].astype(float)
 
-        column_mapping[col] = new_name
+    for col in discrete_cols:
+        if pd.api.types.is_float_dtype(df_converted[col].dropna()):
+            df_converted[col] = df_converted[col].astype(
+                "Int64"
+            )  # Use 'Int64' to handle NaNs
 
-    # Rename the columns using the mapping
-    df = df.rename(columns=column_mapping)
+    if nominal_cols:
+        for col in nominal_cols:
+            if pd.api.types.is_numeric_dtype(df_converted[col]):
+                df_converted[col] = df_converted[col].astype(str)
 
-    print("\nVerifying new column names:")
-    for col in df.columns:
-        print(f"- {col}")
+    return df_converted
+
+
+def simple_fill_missing_by_keywords(
+    df: pd.DataFrame, keywords: List[str]
+) -> pd.DataFrame:
+    """
+    Fill missing values in columns containing any of the given keywords.
+    For categorical columns, fills with 'NA'.
+    For numeric columns, fills with 0.
+
+    Args:
+        df: pandas DataFrame
+        keywords: list of strings to match in column names
+    Returns:
+        DataFrame with filled missing values
+    """
+    # Make a copy to avoid modifying original
+    df_filled = df.copy()
+
+    # Get columns containing any of the keywords
+    cols_to_fill = []
+    for keyword in keywords:
+        cols_to_fill.extend(
+            [col for col in df.columns if keyword.lower() in col.lower()]
+        )
+    cols_to_fill = list(set(cols_to_fill))  # Remove duplicates
+
+    for col in cols_to_fill:
+        # Fill based on data type
+        if df[col].dtype == "object":
+            df_filled[col] = df[col].fillna("NA")
+        else:
+            df_filled[col] = df[col].fillna(0)
+
+    return df_filled
+
+
+def garage_imputer(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Impute garage-related features in a specific order:
+    1. Redenote 'No Garage' garage_type as 'NA'
+    2. Fill missing garage_type with 'NA'
+    3. Fix typo in garage_year_blt
+    4. Fill missing garage_year_blt with year_blt
+    5. Fill missing garage quality metrics with 'NA'
+    6. Fill missing numeric values with 0 only for houses with no garage or detached garage
+
+    Args:
+        df: DataFrame containing garage-related columns
+
+    Returns:
+        DataFrame with imputed garage values
+    """
+    # Make a copy to avoid modifying original
+    df = df.copy()
+
+    # 1. Redenote 'No Garage' garage_type as 'NA'
+    df.loc[df["garage_type"] == "No Garage", "garage_type"] = "NA"
+
+    # 2. Fill missing garage_type with 'NA'
+    df["garage_type"] = df["garage_type"].fillna("NA")
+
+    # 3. Fix typo in garage_year_blt from 2207 to 2007
+    df.loc[df["garage_year_blt"] == 2207, "garage_year_blt"] = 2007
+
+    # 4. Fill missing garage_year_blt with year_blt
+    df.loc[df["garage_year_blt"].isnull(), "garage_year_blt"] = df.loc[
+        df["garage_year_blt"].isnull(), "year_blt"
+    ]
+
+    # 5. Fill missing garage quality metrics with 'NA'
+    for col in ["garage_finish", "garage_qu", "garage_cond"]:
+        df[col] = df[col].fillna("NA")
+
+    # 6. For houses with no garage or detached garage, fill missing numeric values with 0
+    mask = df["garage_type"].isin(["NA", "Detchd"])
+    for col in ["garage_cars", "garage_area"]:
+        df.loc[mask & df[col].isnull(), col] = 0
 
     return df
