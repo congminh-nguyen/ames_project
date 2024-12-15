@@ -129,3 +129,46 @@ ordinal_mappings:
     mapping: {IR3: 1, IR2: 2, IR1: 3, Reg: 4}
   - values: ['Fin', 'RFn', 'Unf', 'NA']
     mapping: {Fin: 4, RFn: 3, Unf: 2, NA: 1}
+
+# Based on this plotting: https://www.tmwr.org/ames
+university_proximity:
+  # Close
+  - category: 4
+    neighborhoods:
+      - OldTown
+      - IDOTRR
+      - BrkSide
+      - SWISU
+      - Crawfor
+      - CollgCr
+      - Landmrk
+  # Moderate
+  - category: 3
+    neighborhoods:
+      - Edwards
+      - Sawyer
+      - Mitchel
+      - Timber
+      - Somerst
+      - Blmngtn
+      - ClearCr
+      - MeadowV
+      - Veenker
+  # Far
+  - category: 2
+    neighborhoods:
+      - NAmes
+      - NWAmes
+      - StoneBr
+      - NridgHt
+      - NoRidge
+      - BrDale
+      - SawyerW
+  # Very Far
+  - category: 1
+    neighborhoods:
+      - Gilbert
+      - NPkVill
+      - Greens
+      - Blueste
+      - GrnHill
