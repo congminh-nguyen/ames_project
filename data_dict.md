@@ -91,7 +91,6 @@ Tab characters are used to separate variables in the data file. The data has 82 
   - `AllPub`: All public Utilities (E,G,W,& S)
   - `NoSewr`: Electricity, Gas, and Water (Septic Tank)
   - `NoSeWa`: Electricity and Gas Only
-  - `ELO`: Electricity only
 - **LotConfig (Nominal)**: Lot configuration:
   - `Inside`: Inside lot
   - `Corner`: Corner lot
@@ -407,7 +406,7 @@ Tab characters are used to separate variables in the data file. The data has 82 
   - `Fin`: Finished
   - `RFn`: Rough Finished
   - `Unf`: Unfinished
-  - `NA`: Missing
+  - `NA`: No Garage
 - **GarageCars (Discrete)**: Size of garage in car capacity
 - **GarageArea (Continuous)**: Size of garage in square feet
 - **GarageQual (Ordinal)**: Garage quality:

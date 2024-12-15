@@ -2,6 +2,7 @@ kaggle:
   api_key_path: "~/.kaggle/kaggle.json"
   dataset: "shashanknecrothapa/ames-housing-dataset"
   download_path: "./iowa_dream/_rawfile"
+  cleaned_path: "./iowa_dream/_cleanfile"
 
 data_dict:
   ordinal_columns:
@@ -99,3 +100,82 @@ data_dict:
       - saleprice
   identifiers:
     - pid
+
+ordinal_mappings:
+  - values: ['Av', 'Gd', 'Mn', 'No', 'NA']
+    mapping: {Av: 5, Gd: 4, Mn: 3, 'No': 2, NA: 1}
+  - values: ['Ex', 'Fa', 'Gd', 'TA', 'NA']
+    mapping: {Ex: 5, Fa: 4, Gd: 3, TA: 2, NA: 1}
+  - values: ['Ex', 'Fa', 'Gd', 'TA']
+    mapping: {Ex: 4, Fa: 3, Gd: 2, TA: 1}
+  - values: ['GdPrv', 'GdWo', 'MnPrv', 'MnWw', 'NA']
+    mapping: {GdPrv: 5, GdWo: 4, MnPrv: 3, MnWw: 2, NA: 1}
+  - values: ['Ex', 'Fa', 'Gd', 'Po', 'TA']
+    mapping: {Ex: 5, Fa: 4, Gd: 3, Po: 2, TA: 1}
+  - values: ['Ex', 'Fa', 'Gd', 'Po', 'TA', 'NA']
+    mapping: {Ex: 6, Fa: 5, Gd: 4, Po: 3, TA: 2, NA: 1}
+  - values: ['Mix', 'FuseP', 'FuseF', 'FuseA', 'SBrkr']
+    mapping: {Mix: 1, FuseP: 2, FuseF: 3, FuseA: 4, SBrkr: 5}
+  - values: ['Sal', 'Sev', 'Maj2', 'Maj1', 'Mod', 'Min2', 'Min1', 'Typ']
+    mapping: {Sal: 1, Sev: 2, Maj2: 3, Maj1: 4, Mod: 5, Min2: 6, Min1: 7, Typ: 8}
+  - values: ['N', 'P', 'Y']
+    mapping: {N: 1, P: 2, Y: 3}
+  - values: ['AllPub', 'NoSeWa', 'NoSewr']
+    mapping: {AllPub: 3, NoSeWa: 2, NoSewr: 1}
+  - values: ['GLQ', 'ALQ', 'BLQ', 'Rec', 'LwQ', 'Unf', 'NA']
+    mapping: {GLQ: 6, ALQ: 5, BLQ: 4, Rec: 3, LwQ: 2, Unf: 1, NA: 1}
+  - values: ['Gtl', 'Mod', 'Sev']
+    mapping: {Gtl: 3, Mod: 2, Sev: 1}
+  - values: ['IR3', 'IR2', 'IR1', 'Reg']
+    mapping: {IR3: 1, IR2: 2, IR1: 3, Reg: 4}
+  - values: ['Fin', 'RFn', 'Unf', 'NA']
+    mapping: {Fin: 4, RFn: 3, Unf: 2, NA: 1}
+
+# Based on this plotting: https://www.tmwr.org/ames
+university_proximity:
+  # Close
+  - category: 4
+    neighborhoods:
+      - OldTown
+      - IDOTRR
+      - BrkSide
+      - SWISU
+      - Crawfor
+      - CollgCr
+      - Landmrk
+  # Moderate
+  - category: 3
+    neighborhoods:
+      - Edwards
+      - Sawyer
+      - Mitchel
+      - Timber
+      - Somerst
+      - Blmngtn
+      - ClearCr
+      - MeadowV
+      - Veenker
+  # Far
+  - category: 2
+    neighborhoods:
+      - NAmes
+      - NWAmes
+      - StoneBr
+      - NridgHt
+      - NoRidge
+      - BrDale
+      - SawyerW
+  # Very Far
+  - category: 1
+    neighborhoods:
+      - Gilbert
+      - NPkVill
+      - Greens
+      - Blueste
+      - GrnHill
+
+preliminary_dropped_features:
+  - garage_year_blt # highly correlated with year_blt and contains redundant information
+  - garage_cars # highly coreated with garage_area (this basically means size of garage in car capacity)
+  - bldg_type # this correlates with ms_subclass, which is a more detailed classification and seems to predict saleprice better
+  - house_style # this correlates with ms_subclass, which is a more detailed classification and seems to predict saleprice better
