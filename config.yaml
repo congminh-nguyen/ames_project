@@ -2,6 +2,7 @@ kaggle:
   api_key_path: "~/.kaggle/kaggle.json"
   dataset: "shashanknecrothapa/ames-housing-dataset"
   download_path: "./iowa_dream/_rawfile"
+  cleaned_path: "./iowa_dream/_cleanfile"
 
 data_dict:
   ordinal_columns:
@@ -172,3 +173,9 @@ university_proximity:
       - Greens
       - Blueste
       - GrnHill
+
+preliminary_dropped_features:
+  - garage_year_blt # highly correlated with year_blt and contains redundant information
+  - garage_cars # highly coreated with garage_area (this basically means size of garage in car capacity)
+  - bldg_type # this correlates with ms_subclass, which is a more detailed classification and seems to predict saleprice better
+  - house_style # this correlates with ms_subclass, which is a more detailed classification and seems to predict saleprice better
