@@ -1,48 +1,6 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
-
-
-def type_formatting(
-    df: pd.DataFrame,
-    discrete_cols: List[str],
-    continuous_cols: List[str],
-    nominal_cols: Optional[List[str]] = None,
-) -> pd.DataFrame:
-    """
-    Convert column types based on their nature:
-    - Convert continuous integer columns to float
-    - Convert discrete float columns to integer
-    - Convert nominal numeric columns to string category
-    Ignore NaN values during conversion.
-
-    Args:
-        df (pd.DataFrame): Input DataFrame
-        discrete_cols (List[str]): List of discrete numeric columns
-        continuous_cols (List[str]): List of continuous numeric columns
-        nominal_cols (Optional[List[str]]): List of nominal categorical columns
-
-    Returns:
-        pd.DataFrame: DataFrame with converted column types
-    """
-    df_converted = df.copy()
-
-    for col in continuous_cols:
-        if pd.api.types.is_integer_dtype(df_converted[col].dropna()):
-            df_converted[col] = df_converted[col].astype(float)
-
-    for col in discrete_cols:
-        if pd.api.types.is_float_dtype(df_converted[col].dropna()):
-            df_converted[col] = df_converted[col].astype(
-                "Int64"
-            )  # Use 'Int64' to handle NaNs
-
-    if nominal_cols:
-        for col in nominal_cols:
-            if pd.api.types.is_numeric_dtype(df_converted[col]):
-                df_converted[col] = df_converted[col].astype(str)
-
-    return df_converted
 
 
 def simple_fill_missing_by_keywords(
@@ -123,3 +81,71 @@ def garage_imputer(df: pd.DataFrame) -> pd.DataFrame:
         df.loc[mask & df[col].isnull(), col] = 0
 
     return df
+
+
+def type_formatting(
+    df: pd.DataFrame,
+    discrete_cols: List[str],
+    continuous_cols: List[str],
+    nominal_cols: Optional[List[str]] = None,
+    ordinal_cols: Optional[List[str]] = None,
+    ordinal_mappings: Optional[List[Dict[str, Any]]] = None,
+) -> pd.DataFrame:
+    """
+    Convert column types based on their nature:
+    - Convert continuous integer columns to float
+    - Convert discrete float columns to integer
+    - Convert nominal numeric columns to string category
+    - Convert ordinal columns based on predefined mappings
+    Ignore NaN values during conversion.
+    """
+    df_converted = df.copy()
+
+    # Validate ordinal_mappings
+    if ordinal_mappings is None:
+        if ordinal_cols is not None:
+            raise ValueError(
+                "If ordinal_mappings is None, ordinal_cols should also be None or provide a list."
+            )
+        ordinal_mappings = []
+    if not all(
+        isinstance(entry, dict) and "values" in entry and "mapping" in entry
+        for entry in ordinal_mappings
+    ):
+        raise ValueError(
+            "Each entry in ordinal_mappings must be a dictionary with 'values' and 'mapping' keys."
+        )
+
+    # Convert continuous integer columns to float
+    for col in continuous_cols:
+        if pd.api.types.is_integer_dtype(df_converted[col]):
+            df_converted[col] = df_converted[col].astype(float)
+
+    # Convert discrete float columns to integer
+    for col in discrete_cols:
+        if pd.api.types.is_float_dtype(df_converted[col]):
+            df_converted[col] = df_converted[col].astype(
+                "Int64"
+            )  # Use 'Int64' to handle NaNs
+
+    # Convert nominal numeric columns to string category
+    if nominal_cols:
+        for col in nominal_cols:
+            if pd.api.types.is_numeric_dtype(df_converted[col]):
+                df_converted[col] = df_converted[col].astype(str)
+
+    # Convert ordinal columns based on predefined mappings
+    if ordinal_cols:
+        mappings = {
+            frozenset(entry["values"]): entry["mapping"] for entry in ordinal_mappings
+        }
+        for col in ordinal_cols:
+            if pd.api.types.is_integer_dtype(df_converted[col]):
+                continue
+
+            # Drop NaN values to ensure correct mapping
+            unique_values = frozenset(df_converted[col].unique())
+            if unique_values in mappings:
+                df_converted[col] = df_converted[col].map(mappings[unique_values])
+
+    return df_converted
