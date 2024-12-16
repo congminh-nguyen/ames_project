@@ -32,20 +32,22 @@ def standardize_column_names(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def preliminary_loader(data_file: Path) -> pd.DataFrame:
+def preliminary_loader(data_file: Path, standardize: bool = True) -> pd.DataFrame:
     """
-    Load data from a CSV file, standardize column names, and add a column for data type.
+    Load data from a CSV file and optionally standardize column names.
 
     Args:
         data_file (Path): Path to the CSV file to load
+        standardize (bool, optional): Whether to standardize column names. Defaults to True.
 
     Returns:
-        pd.DataFrame: DataFrame with standardized column names and data type column
+        pd.DataFrame: DataFrame with optionally standardized column names
     """
     # Load the data
     df = pd.read_csv(data_file)
 
-    # Standardize column names
-    df = standardize_column_names(df)
+    # Standardize column names if requested
+    if standardize:
+        df = standardize_column_names(df)
 
     return df

@@ -43,7 +43,7 @@ class DropFeatures(BaseEstimator, TransformerMixin):
         return X_copy
 
 
-class AddAttributesNumerical(BaseEstimator, TransformerMixin):
+class AddAttributes_Numerical(BaseEstimator, TransformerMixin):
     """
     A transformer to add new numerical attributes for feature engineering in a dataset.
 
@@ -69,7 +69,7 @@ class AddAttributesNumerical(BaseEstimator, TransformerMixin):
 
     def fit(
         self, X: pd.DataFrame, y: Optional[pd.Series] = None
-    ) -> "AddAttributesNumerical":
+    ) -> "AddAttributes_Numerical":
         """Fit method - no fitting required for feature engineering."""
         return self
 
@@ -114,7 +114,7 @@ class AddAttributesNumerical(BaseEstimator, TransformerMixin):
         timing_numerator = X_copy["year_remod/add"] - X_copy["year_blt"]
         timing_denominator = X_copy["year_sold"] - X_copy["year_blt"]
         timing_remodel_index = np.divide(
-            timing_numerator,
+            np.maximum(0, timing_numerator),  # Ensure numerator is non-negative
             timing_denominator,
             out=np.zeros_like(timing_numerator, dtype=float),
             where=(timing_denominator != 0),
@@ -151,7 +151,7 @@ class AddAttributesNumerical(BaseEstimator, TransformerMixin):
         return X_copy
 
 
-class AddAttributesOrdinal(BaseEstimator, TransformerMixin):
+class AddAttributes_Ordinal(BaseEstimator, TransformerMixin):
     """
     A transformer to add ordinal attributes for feature engineering.
 
@@ -216,36 +216,55 @@ class AddAttributesOrdinal(BaseEstimator, TransformerMixin):
             DataFrame with added ordinal attributes if add_attributes is True,
             otherwise returns original DataFrame.
         """
-        if self.add_attributes:
-            # Add the university proximity category to the dataset
-            X["university_proximity_category"] = X["neighborhood"].apply(
-                lambda neighborhood: self.get_university_proximity_category(
-                    neighborhood
-                )
-            )
-            X["interior_quality_score"] = (
-                X["kitchen_qu"]
-                + X["bsmt_qu"]
-                + X["bsmt_cond"]
-                + X["garage_finish"]
-                + X["bsmt_exposure"]
-                + X["fireplace_qu"]
-                + X["heating"]
-                + X["electrical"]
-                + X["garage_qu"]
-                + X["garage_cond"]
-                + X["central_air"]
-                + X["utilites"]
-            )
-            X["exterior_quality_score"] = (
-                X["exter_qu"]
-                + X["exter_cond"]
-                + X["paved_drive"]
-                + X["land_slope"]
-                + X["lot_shape"]
-                + X["fence"]
-                + X["pool_qu"]
-            )
+        if not self.add_attributes:
             return X
-        else:
-            return X
+
+        X_copy = X.copy()
+
+        # Add the university proximity category to the dataset
+        X_copy["university_proximity_category"] = X_copy["neighborhood"].apply(
+            lambda neighborhood: self.get_university_proximity_category(neighborhood)
+        )
+
+        # Convert columns to numeric before adding
+        interior_cols = [
+            "kitchen_qu",
+            "bsmt_qu",
+            "bsmt_cond",
+            "garage_finish",
+            "bsmt_exposure",
+            "fireplace_qu",
+            "electrical",
+            "garage_qu",
+            "garage_cond",
+            "utilities",
+        ]
+        exterior_cols = [
+            "exter_qu",
+            "exter_cond",
+            "paved_drive",
+            "land_slope",
+            "lot_shape",
+            "fence",
+            "pool_qu",
+        ]
+
+        # Calculate interior quality score by converting each column to numeric first
+        interior_quality_score = pd.Series(0, index=X_copy.index)
+        for col in interior_cols:
+            if col in X_copy.columns:
+                interior_quality_score += pd.to_numeric(
+                    X_copy[col], errors="coerce"
+                ).fillna(0)
+        X_copy["interior_quality_score"] = interior_quality_score
+
+        # Calculate exterior quality score by converting each column to numeric first
+        exterior_quality_score = pd.Series(0, index=X_copy.index)
+        for col in exterior_cols:
+            if col in X_copy.columns:
+                exterior_quality_score += pd.to_numeric(
+                    X_copy[col], errors="coerce"
+                ).fillna(0)
+        X_copy["exterior_quality_score"] = exterior_quality_score
+
+        return X_copy

@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from iowa_dream.feature_engineering.add_drop_features import AddAttributesNumerical
+from iowa_dream.feature_engineering.add_drop_features import AddAttributes_Numerical
 
 
 # Test function
@@ -31,7 +31,7 @@ def test_add_attributes_numerical():
     df = pd.DataFrame(data)
 
     # Initialize the AddAttributesNumerical transformer
-    transformer = AddAttributesNumerical(add_attributes=True)
+    transformer = AddAttributes_Numerical(add_attributes=True)
 
     # Transform the DataFrame
     transformed_df = transformer.transform(df)

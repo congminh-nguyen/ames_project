@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 from sklearn.exceptions import NotFittedError
 
-from iowa_dream.feature_engineering.numerical_transformer import (  # Replace with the actual module name
+from iowa_dream.feature_engineering.numerical_transformer import (
     RobustScalerWithIndicator,
 )
 
@@ -13,9 +13,9 @@ def sample_data():
     """Fixture to provide sample DataFrame for testing."""
     return pd.DataFrame(
         {
-            "A": [1, 2, 3, 4, 5],
-            "B": [10, 20, 30, 0, 50],
-            "C": [0, 0, 0, 0, 0],  # Constant column
+            "A": [1, 2, 3, 4, 5],  # No zeros
+            "B": [10, 20, 30, 0, 50],  # Has one zero
+            "C": [0, 0, 0, 0, 0],  # All zeros
         }
     )
 
@@ -34,6 +34,11 @@ def test_fit(sample_data):
     assert scaler.scalers_["B"]["scale"] == 20
     assert scaler.scalers_["C"]["scale"] == 1.0  # Avoid division by zero
 
+    # Test has_zeros_ flags
+    assert not scaler.has_zeros_["A"]  # No zeros
+    assert scaler.has_zeros_["B"]  # Has zeros
+    assert scaler.has_zeros_["C"]  # All zeros
+
 
 def test_transform(sample_data):
     """Test the transform method applies scaling correctly and adds zero indicators."""
@@ -44,12 +49,13 @@ def test_transform(sample_data):
     # Check scaled values for column A
     expected_A = (sample_data["A"] - 3) / 2
     assert np.allclose(transformed["A"], expected_A)
+    # No zero indicator for A since it has no zeros
+    assert "A_zero_indicator" not in transformed.columns
 
     # Check scaled values for column B
     expected_B = (sample_data["B"] - 20) / 20
     assert np.allclose(transformed["B"], expected_B)
-
-    # Check zero indicator for column B
+    # Check zero indicator for column B since it has zeros
     assert np.array_equal(
         transformed["B_zero_indicator"], (sample_data["B"] == 0).astype(int)
     )
@@ -76,7 +82,10 @@ def test_transform_with_non_dataframe_input():
 
     # Check the shape and values
     assert transformed.shape[0] == data.shape[0]
-    assert "0_zero_indicator" in transformed.columns  # Ensure indicator column is added
+    # Column 0 has no zeros, so no indicator needed
+    assert "0_zero_indicator" not in transformed.columns
+    # Column 1 has zeros, so indicator needed
+    assert "1_zero_indicator" in transformed.columns
 
 
 def test_inverse_transform_with_zero_indicator():

@@ -14,6 +14,7 @@ class RobustScalerWithIndicator(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         X = self._validate_input(X)
         self.scalers_ = {}
+        self.has_zeros_ = {}
         for col in X.columns:
             values = X[col].values
             center = np.median(values)
@@ -22,6 +23,8 @@ class RobustScalerWithIndicator(BaseEstimator, TransformerMixin):
             scale = q3 - q1
             scale = scale if scale != 0 else 1.0
             self.scalers_[col] = {"center": center, "scale": scale}
+            # Check if column has any zeros
+            self.has_zeros_[col] = np.any(values == 0)
         return self
 
     def transform(self, X):
@@ -48,8 +51,11 @@ class RobustScalerWithIndicator(BaseEstimator, TransformerMixin):
             scale = scaler_params["scale"]
             new_col = (new_col - center) / scale
             X_transformed[col] = new_col
-            if self.add_indicator:
-                X_transformed[f"{col}_zero_indicator"] = (X[col] == 0).astype(int)
+            # Only add indicator if column had zeros during fit
+            if self.add_indicator and self.has_zeros_[col]:
+                # Double check current data also has zeros before adding indicator
+                if np.any(X[col] == 0):
+                    X_transformed[f"{col}_zero_indicator"] = (X[col] == 0).astype(int)
         return X_transformed if self.output_dataframe else X_transformed.values
 
     def inverse_transform(self, X):

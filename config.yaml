@@ -32,7 +32,7 @@ data_dict:
       - pool_qu
       - fence
   nominal_columns:
-    count: 27
+    count: 28
     columns:
       - ms_subclass
       - ms_zoning
@@ -61,8 +61,9 @@ data_dict:
       - year_remod/add
       - year_sold
       - garage_year_blt
+      - mo_sold
   discrete_columns:
-    count: 10
+    count: 9
     columns:
       - bsmt_full_bath
       - bsmt_half_bath
@@ -73,7 +74,6 @@ data_dict:
       - totrms_abvgr
       - fireplaces
       - garage_cars
-      - mo_sold
   continuous_columns:
     count: 19
     columns:
@@ -176,6 +176,8 @@ university_proximity:
 
 preliminary_dropped_features:
   - garage_year_blt # highly correlated with year_blt and contains redundant information
-  - garage_cars # highly coreated with garage_area (this basically means size of garage in car capacity)
+  - garage_area # highly coreated with garage_cars (this basically means size of garage in car capacity)
   - bldg_type # this correlates with ms_subclass, which is a more detailed classification and seems to predict saleprice better
   - house_style # this correlates with ms_subclass, which is a more detailed classification and seems to predict saleprice better
+  - utilities # Too litlle variations
+  - pool_qu # Too litlle variations as very few houses have pool, and part of its variation should already be captured by pool area

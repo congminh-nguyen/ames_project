@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from iowa_dream.feature_engineering.add_drop_features import AddAttributesOrdinal
+from iowa_dream.feature_engineering.add_drop_features import AddAttributes_Ordinal
 
 
 @pytest.fixture
@@ -16,12 +16,10 @@ def sample_data():
         "garage_finish": [4, 1, 2, 3],
         "bsmt_exposure": [1, 2, 3, 4],
         "fireplace_qu": [2, 3, 4, 1],
-        "heating": [3, 4, 1, 2],
         "electrical": [4, 1, 2, 3],
         "garage_qu": [1, 2, 3, 4],
         "garage_cond": [2, 3, 4, 1],
-        "central_air": [3, 4, 1, 2],
-        "utilites": [4, 1, 2, 3],
+        "utilities": [4, 1, 2, 3],
         "exter_qu": [1, 2, 3, 4],
         "exter_cond": [2, 3, 4, 1],
         "paved_drive": [3, 4, 1, 2],
@@ -41,7 +39,7 @@ def proximity_data():
 
 def test_transform_with_proximity_data(sample_data, proximity_data):
     """Test the transform method when proximity data is provided."""
-    transformer = AddAttributesOrdinal(
+    transformer = AddAttributes_Ordinal(
         add_attributes=True, proximity_data=proximity_data
     )
     transformed_data = transformer.fit_transform(sample_data)
@@ -61,11 +59,11 @@ def test_transform_with_proximity_data(sample_data, proximity_data):
 
     # Expected values based on the sample data
     expected_interior_scores = [
-        30,
-        30,
-        30,
-        30,
-    ]  # 1+2+3+4+1+2+3+4+1+2+3+4 = 30 for each row
+        24,
+        22,
+        28,
+        26,
+    ]  # Sum of interior quality features for each row
     expected_exterior_scores = [16, 19, 18, 17]  # Calculated manually for each row
 
     assert (
@@ -78,7 +76,7 @@ def test_transform_with_proximity_data(sample_data, proximity_data):
 
 def test_transform_without_proximity_data(sample_data):
     """Test the transform method when proximity data is not provided."""
-    transformer = AddAttributesOrdinal(add_attributes=True, proximity_data=None)
+    transformer = AddAttributes_Ordinal(add_attributes=True, proximity_data=None)
     transformed_data = transformer.fit_transform(sample_data)
 
     # Assert that the new column is added with default values
@@ -88,7 +86,7 @@ def test_transform_without_proximity_data(sample_data):
 
 def test_transform_no_add_attributes(sample_data, proximity_data):
     """Test the transform method when add_attributes is False."""
-    transformer = AddAttributesOrdinal(
+    transformer = AddAttributes_Ordinal(
         add_attributes=False, proximity_data=proximity_data
     )
     transformed_data = transformer.fit_transform(sample_data)
@@ -101,7 +99,7 @@ def test_transform_no_add_attributes(sample_data, proximity_data):
 
 def test_proximity_category_functionality(proximity_data):
     """Test the get_university_proximity_category method."""
-    transformer = AddAttributesOrdinal(proximity_data=proximity_data)
+    transformer = AddAttributes_Ordinal(proximity_data=proximity_data)
 
     assert transformer.get_university_proximity_category("Downtown") == 1
     assert transformer.get_university_proximity_category("Suburb") == 2
@@ -113,4 +111,4 @@ def test_proximity_category_functionality(proximity_data):
 def test_input_validation():
     """Test input validation for incorrect proximity_data."""
     with pytest.raises(ValueError):
-        AddAttributesOrdinal(add_attributes=True, proximity_data="invalid_data")
+        AddAttributes_Ordinal(add_attributes=True, proximity_data="invalid_data")
