@@ -32,7 +32,7 @@ data_dict:
       - pool_qu
       - fence
   nominal_columns:
-    count: 23
+    count: 27
     columns:
       - ms_subclass
       - ms_zoning
@@ -57,11 +57,13 @@ data_dict:
       - sale_type
       - sale_condition
       - misc_feature
-  discrete_columns:
-    count: 14
-    columns:
       - year_blt
       - year_remod/add
+      - year_sold
+      - garage_year_blt
+  discrete_columns:
+    count: 10
+    columns:
       - bsmt_full_bath
       - bsmt_half_bath
       - full_bath
@@ -70,10 +72,8 @@ data_dict:
       - kitchen_abvgr
       - totrms_abvgr
       - fireplaces
-      - garage_year_blt
       - garage_cars
       - mo_sold
-      - year_sold
   continuous_columns:
     count: 19
     columns:

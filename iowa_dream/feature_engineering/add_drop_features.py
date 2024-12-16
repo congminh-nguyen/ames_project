@@ -6,13 +6,36 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 
 class DropFeatures(BaseEstimator, TransformerMixin):
+    """
+    A transformer to drop specified columns from a DataFrame.
+
+    Parameters:
+    -----------
+    col_drop : Optional[List[str]], default=None
+        List of column names to drop from the DataFrame. If None, no columns are dropped.
+    """
+
     def __init__(self, col_drop: Optional[List[str]] = None):
         self.col_drop = col_drop
 
     def fit(self, X: pd.DataFrame, y: Optional[pd.Series] = None) -> "DropFeatures":
+        """Fit method - no fitting required for dropping columns."""
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """
+        Drop specified columns from the DataFrame.
+
+        Parameters:
+        -----------
+        X : pd.DataFrame
+            Input DataFrame to transform.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame with specified columns dropped.
+        """
         X_copy = X.copy()
         if self.col_drop:
             X_copy.drop(self.col_drop, axis=1, inplace=True)
@@ -21,52 +44,208 @@ class DropFeatures(BaseEstimator, TransformerMixin):
 
 
 class AddAttributesNumerical(BaseEstimator, TransformerMixin):
-    def __init__(self, add_attributes=True):
+    """
+    A transformer to add new numerical attributes for feature engineering in a dataset.
+
+    Parameters:
+    -----------
+    add_attributes : bool, default=True
+        If True, additional attributes are calculated and added to the dataset.
+
+    Features added:
+    --------------
+    pct_half_bath : float
+        Percentage of half bathrooms relative to total bathrooms.
+    timing_remodel_index : float
+        Timing of remodeling relative to house age (0-1 scale).
+    total_area : float
+        Total area including all living spaces and outdoor features.
+    pct_finished_bsmt_sf : float
+        Percentage of basement that is finished.
+    """
+
+    def __init__(self, add_attributes: bool = True) -> None:
         self.add_attributes = add_attributes
 
-    def fit(self, X, y=None):
+    def fit(
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> "AddAttributesNumerical":
+        """Fit method - no fitting required for feature engineering."""
         return self
 
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """
+        Transform method to add new numerical attributes.
+
+        Parameters:
+        -----------
+        X : DataFrame
+            Input features.
+
+        Returns:
+        --------
+        X_copy : DataFrame
+            DataFrame with added attributes.
+        """
+        if not self.add_attributes:
+            return X
+
+        X_copy = X.copy()  # Avoid modifying the original dataset
+
+        # Safely calculate pct_half_bath
+        with np.errstate(divide="ignore", invalid="ignore"):
+            pct_half_bath = np.divide(
+                0.5 * X_copy["half_bath"] + 0.5 * X_copy["bsmt_half_bath"],
+                X_copy["full_bath"]
+                + 0.5 * X_copy["half_bath"]
+                + X_copy["bsmt_full_bath"]
+                + 0.5 * X_copy["bsmt_half_bath"],
+                out=np.zeros_like(X_copy["half_bath"], dtype=float),
+                where=(
+                    X_copy["full_bath"]
+                    + 0.5 * X_copy["half_bath"]
+                    + X_copy["bsmt_full_bath"]
+                    + 0.5 * X_copy["bsmt_half_bath"]
+                )
+                != 0,
+            )
+
+        # Safely calculate timing_remodel_index
+        timing_numerator = X_copy["year_remod/add"] - X_copy["year_blt"]
+        timing_denominator = X_copy["year_sold"] - X_copy["year_blt"]
+        timing_remodel_index = np.divide(
+            timing_numerator,
+            timing_denominator,
+            out=np.zeros_like(timing_numerator, dtype=float),
+            where=(timing_denominator != 0),
+        )
+
+        # Calculate total_area
+        total_area = (
+            X_copy["1st_flr_sf"]
+            + X_copy["2nd_flr_sf"]
+            + X_copy["gr_liv_area"]
+            + X_copy["total_bsmt_sf"]
+            + X_copy["pool_area"]
+            + X_copy["open_porch_sf"]
+            + X_copy["enclosed_porch"]
+            + X_copy["3ssn_porch"]
+            + X_copy["screen_porch"]
+            + X_copy["wood_deck_sf"]
+        )
+
+        # Safely calculate pct_finished_bsmt_sf
+        pct_finished_bsmt_sf = np.divide(
+            X_copy["bsmtfin_sf_1"] + X_copy["bsmtfin_sf_2"],
+            X_copy["total_bsmt_sf"],
+            out=np.zeros_like(X_copy["bsmtfin_sf_1"], dtype=float),
+            where=(X_copy["total_bsmt_sf"] != 0),
+        )
+
+        # Add new features
+        X_copy["pct_half_bath"] = pct_half_bath
+        X_copy["timing_remodel_index"] = timing_remodel_index
+        X_copy["total_area"] = total_area
+        X_copy["pct_finished_bsmt_sf"] = pct_finished_bsmt_sf
+
+        return X_copy
+
+
+class AddAttributesOrdinal(BaseEstimator, TransformerMixin):
+    """
+    A transformer to add ordinal attributes for feature engineering.
+
+    Parameters:
+    -----------
+    add_attributes : bool, default=True
+        Whether to add new attributes.
+    proximity_data : dict, default=None
+        Dictionary mapping neighborhoods to university proximity categories.
+
+    Features added:
+    --------------
+    university_proximity_category : int
+        Category indicating proximity to university (-1 if unknown).
+    interior_quality_score : float
+        Composite score of interior quality features.
+    exterior_quality_score : float
+        Composite score of exterior quality features.
+    """
+
+    def __init__(self, add_attributes=True, proximity_data=None):
+        if proximity_data is not None and not isinstance(proximity_data, dict):
+            raise ValueError("proximity_data must be a dictionary or None.")
+
+        self.add_attributes = add_attributes
+        self.proximity_data = proximity_data
+
+    def fit(self, X, y=None):
+        """Fit method - no fitting required for feature engineering."""
+        return self
+
+    def get_university_proximity_category(self, neighborhood):
+        """
+        Helper method to get the university proximity category for a given neighborhood.
+
+        Parameters:
+        -----------
+        neighborhood : str
+            Name of the neighborhood.
+
+        Returns:
+        --------
+        int
+            Proximity category corresponding to the neighborhood (-1 if not found).
+        """
+        if self.proximity_data and neighborhood in self.proximity_data:
+            return self.proximity_data[neighborhood]
+        return -1  # Default category if neighborhood is not found
+
     def transform(self, X):
+        """
+        Transform method to add ordinal attributes.
+
+        Parameters:
+        -----------
+        X : DataFrame
+            Input features.
+
+        Returns:
+        --------
+        DataFrame
+            DataFrame with added ordinal attributes if add_attributes is True,
+            otherwise returns original DataFrame.
+        """
         if self.add_attributes:
-            pct_half_bath = (0.5 * X["half_bath"] + 0.5 * X["bsmt_half_bath"]) / (
-                X["full_bath"]
-                + 0.5 * X["half_bath"]
-                + X["bsmt_full_bath"]
-                + 0.5 * X["bsmt_half_bath"]
+            # Add the university proximity category to the dataset
+            X["university_proximity_category"] = X["neighborhood"].apply(
+                lambda neighborhood: self.get_university_proximity_category(
+                    neighborhood
+                )
             )
-            timing_numerator = X["year_remod/add"] - X["year_blt"]
-            timing_denominator = X["year_sold"] - X["year_blt"]
-            timing_remodel_index = np.where(
-                (X["year_sold"] > X["year_blt"]) & (timing_denominator != 0),
-                timing_numerator / timing_denominator,  # Perform division safely
-                0,  # Default value when conditions are not met
+            X["interior_quality_score"] = (
+                X["kitchen_qu"]
+                + X["bsmt_qu"]
+                + X["bsmt_cond"]
+                + X["garage_finish"]
+                + X["bsmt_exposure"]
+                + X["fireplace_qu"]
+                + X["heating"]
+                + X["electrical"]
+                + X["garage_qu"]
+                + X["garage_cond"]
+                + X["central_air"]
+                + X["utilites"]
             )
-            total_area = (
-                X["1st_flr_sf"]
-                + X["2nd_flr_sf"]
-                + X["gr_liv_area"]
-                + X["total_bsmt_sf"]
-                + X["pool_area"]
-                + X["open_porch_sf"]
-                + X["enclosed_porch"]
-                + X["3ssn_porch"]
-                + X["screen_porch"]
-                + X["wood_deck_sf"]
+            X["exterior_quality_score"] = (
+                X["exter_qu"]
+                + X["exter_cond"]
+                + X["paved_drive"]
+                + X["land_slope"]
+                + X["lot_shape"]
+                + X["fence"]
+                + X["pool_qu"]
             )
-            pct_finished_bsmt_sf = (X["bsmtfin_sf_1"] + X["bsmtfin_sf_2"]) / X[
-                "total_bsmt_sf"
-            ]
-            new_features = pd.DataFrame(
-                {
-                    "pct_half_bath": pct_half_bath,
-                    "timing_remodel_index": timing_remodel_index,
-                    "total_area": total_area,
-                    "pct_finished_bsmt_sf": pct_finished_bsmt_sf,
-                },
-                index=X.index,
-            )
-            X_copy = pd.concat([X, new_features], axis=1)
-            return X_copy
+            return X
         else:
             return X

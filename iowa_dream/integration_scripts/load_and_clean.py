@@ -43,23 +43,40 @@ def main():
     # Load the data
     df = preliminary_loader(download_path)
 
-    # Filter out the outliers where gr_liv_area > 4000 and saleprice < 200000
+    # Data Cleaning Process
+    # Step 1: Outlier Removal
+    # Remove outliers where the ground living area is greater than 4000 square feet
+    # and the sale price is less than $200,000. These are considered anomalies
+    # that could skew the analysis.
     df = df[~((df.gr_liv_area > 4000) & (df.saleprice < 200000))]
 
-    # Impute missing values
+    # Step 2: Missing Value Imputation
+    # Use keyword-based imputation for columns related to pool, basement, fence,
+    # fireplace, alley, miscellaneous features, and masonry veneer. This method
+    # fills missing values with a placeholder or a default value based on the
+    # context of the column.
     df = simple_fill_missing_by_keywords(
         df, ["pool", "bsmt", "fence", "fireplace", "alley", "misc_feature", "mas_vnr"]
     )
+    # Specifically fill missing values in the 'electrical' column with 'SBrkr',
+    # which is the most common electrical system in the dataset.
     df["electrical"] = df["electrical"].fillna("SBrkr")
+    # Use a specialized imputer for garage-related columns to handle missing
+    # values based on domain-specific logic.
     df = garage_imputer(df)
 
-    # Extract feature column names for different data types
+    # Step 3: Data Type Formatting
+    # Load the data dictionary from the configuration to extract feature column
+    # names categorized by their data types: ordinal, nominal, continuous, and discrete.
     data_dict = load_config()["data_dict"]
     ordinal = data_dict["ordinal_columns"]["columns"]
     nominal = data_dict["nominal_columns"]["columns"]
     continuous = data_dict["continuous_columns"]["columns"]
     discrete = data_dict["discrete_columns"]["columns"]
 
+    # Format the data types of the columns according to their categories.
+    # This includes converting columns to appropriate data types and applying
+    # ordinal mappings where necessary.
     df = type_formatting(
         df,
         discrete_cols=discrete,

@@ -9,10 +9,10 @@ SIZE: 2930 observations, 82 variables
 Ames Iowa: Alternative to the Boston Housing Data Set
 
 ## Descriptive Abstract
-Data set contains information from the Ames Assessor’s Office used in computing assessed values for individual residential properties sold in Ames, IA from 2006 to 2010.
+Data set contains information from the Ames Assessor's Office used in computing assessed values for individual residential properties sold in Ames, IA from 2006 to 2010.
 
 ## Sources
-Ames, Iowa Assessor’s Office
+Ames, Iowa Assessor's Office
 
 ## Variable Descriptions
 Tab characters are used to separate variables in the data file. The data has 82 columns which include 23 nominal, 23 ordinal, 14 discrete, and 20 continuous variables (and 2 additional observation identifiers).
@@ -194,9 +194,9 @@ Tab characters are used to separate variables in the data file. The data has 82 
   - `1`: Very Poor
 
 #### Timing of Building (General)
-- **YearBuilt (Discrete)**: Original construction date
-- **YearRemodAdd (Discrete)**: Remodel date (same as construction date if no remodeling or additions)
-- **GarageYrBlt (Discrete)**: Year garage was built (NA = no garage)
+- **YearBuilt (Nominal)**: Original construction date
+- **YearRemodAdd (Nominal)**: Remodel date (same as construction date if no remodeling or additions)
+- **GarageYrBlt (Nominal)**: Year garage was built (NA = no garage)
 
 #### Roof Details (Specific)
 - **RoofStyle (Nominal)**: Type of roof:
@@ -465,5 +465,5 @@ Tab characters are used to separate variables in the data file. The data has 82 
 - **MiscVal (Continuous)**: $Value of miscellaneous feature
 
 #### Sale Timing (General)
-- **MoSold (Discrete)**: Month Sold (MM)
-- **YrSold (Discrete)**: Year Sold (YYYY)
+- **MoSold (Nominal)**: Month Sold (MM)
+- **YrSold (Nominal)**: Year Sold (YYYY)
