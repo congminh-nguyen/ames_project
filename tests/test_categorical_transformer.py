@@ -1,4 +1,3 @@
-import pandas
 import pytest
 
 from iowa_dream.feature_engineering.categotical_transformer import (
