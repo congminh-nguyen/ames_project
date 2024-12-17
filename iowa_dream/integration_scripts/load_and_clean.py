@@ -1,4 +1,3 @@
-import filecmp  # For file comparison
 import sys
 from pathlib import Path
 
@@ -13,15 +12,6 @@ from iowa_dream.data.cleaner import (
 )
 from iowa_dream.data.importer import load_config
 from iowa_dream.data.loader import preliminary_loader
-
-
-def is_duplicate_file(existing_file: Path, new_file_path: Path) -> bool:
-    """
-    Check if an existing file is identical to a newly created file.
-    """
-    if existing_file.exists():
-        return filecmp.cmp(existing_file, new_file_path, shallow=False)
-    return False
 
 
 def main():
@@ -43,52 +33,109 @@ def main():
     # Load the data
     df = preliminary_loader(download_path)
 
-    # Filter out the outliers where gr_liv_area > 4000 and saleprice < 200000
-    df = df[~((df.gr_liv_area > 4000) & (df.saleprice < 200000))]
+    # Data Cleaning Process
+    # Step 1: Outlier Removal
+    # Remove outliers where the ground living area is greater than 4000 square feet. These are considered anomalies
+    # that could skew the analysis.
+    df = df[~(df.gr_liv_area > 4000)]
 
-    # Impute missing values
-    df = simple_fill_missing_by_keywords(
-        df, ["pool", "bsmt", "fence", "fireplace", "alley", "misc_feature", "mas_vnr"]
-    )
+    # Step 2: Missing Value Imputation
+    # Use keyword-based imputation
+    df = simple_fill_missing_by_keywords(df, ["bsmt", "fireplace", "mas_vnr"])
+
+    # Specifically fill missing values in the 'electrical' column with 'SBrkr',
+    # which is the most common electrical system in the dataset.
     df["electrical"] = df["electrical"].fillna("SBrkr")
+    # Use a specialized imputer for garage-related columns to handle missing
+    # values based on domain-specific logic.
     df = garage_imputer(df)
 
-    # Extract feature column names for different data types
-    data_dict = load_config()["data_dict"]
-    ordinal = data_dict["ordinal_columns"]["columns"]
-    nominal = data_dict["nominal_columns"]["columns"]
-    continuous = data_dict["continuous_columns"]["columns"]
-    discrete = data_dict["discrete_columns"]["columns"]
+    # Remove inconsistent years
+    df = df[~(df["year_sold"] < df["year_blt"])]
+    df = df[df["year_sold"] >= df["year_remod/add"]]
 
+    # Drop features based on correlation analysis and highly correlated features
+    df = df.drop(
+        [
+            "bsmt_exposure",
+            "bsmt_full_bath",
+            "bsmt_half_bath",
+            "bsmt_unf_sf",
+            "bsmtfin_sf_2",
+            "bsmtfin_type_2",
+            "central_air",
+            "condition_2",
+            "enclosed_porch",
+            "exter_qu",
+            "exterior_2nd",
+            "fence",
+            "functional",
+            "garage_area",
+            "garage_cond",
+            "garage_finish",
+            "garage_type",
+            "garage_year_blt",
+            "house_style",
+            "land_contour",
+            "land_slope",
+            "low_qu_fin_sf",
+            "misc_feature",
+            "misc_val",
+            "ms_zoning",
+            "open_porch_sf",
+            "pool_area",
+            "pool_qu",
+            "roof_matl",
+            "sale_condition",
+            "screen_porch",
+            "street",
+            "totrms_abvgr",
+            "utilities",
+            "3ssn_porch",
+            "bldg_type",
+            "1st_flr_sf",
+            "alley",
+            "order",
+            "bsmtfin_type_1",
+        ],
+        axis=1,
+    )
+
+    # Step 3: Data Type Formatting
+    # Load the data dictionary from the configuration to extract feature column
+    # names categorized by their data types: ordinal, nominal, continuous, and discrete.
+    ordinal_mappings = load_config()["ordinal_mappings"]
+
+    # Format the data types of the columns according to their categories.
+    # This includes converting columns to appropriate data types and applying
+    # ordinal mappings where necessary.
     df = type_formatting(
         df,
-        discrete_cols=discrete,
-        continuous_cols=continuous,
-        nominal_cols=nominal,
-        ordinal_cols=ordinal,
-        ordinal_mappings=load_config().get("ordinal_mappings", []),
+        [
+            "garage_qu",
+            "fireplace_qu",
+            "kitchen_qu",
+            "heating_qu",
+            "bsmt_qu",
+            "bsmt_cond",
+            "lot_shape",
+            "exter_cond",
+            "paved_drive",
+        ],
+        ordinal_mappings,
     )
+
+    # Step 4: Drop Unnecessary Features
+    # Drop features that are deemed unnecessary or redundant as specified in the configuration.
+    preliminary_dropped_features = config.get("preliminary_dropped_features", [])
+    df = df.drop(columns=preliminary_dropped_features, errors="ignore")
 
     # Create cleaned directory if it doesn't exist
     cleaned_dir.mkdir(parents=True, exist_ok=True)
 
-    # Save cleaned data only if it doesn't already exist or is different
-    if cleaned_path.exists():
-        temp_cleaned_path = cleaned_dir / "temp_cleaned_AmesHousing.csv"
-        df.to_csv(temp_cleaned_path, index=False)
-        if is_duplicate_file(cleaned_path, temp_cleaned_path):
-            print(
-                f"The existing cleaned file at {cleaned_path} is identical. No changes made."
-            )
-            temp_cleaned_path.unlink()
-        else:
-            print(
-                f"Updated cleaned file detected. Saving new cleaned file to {cleaned_path}"
-            )
-            temp_cleaned_path.rename(cleaned_path)
-    else:
-        df.to_csv(cleaned_path, index=False)
-        print(f"Cleaned data saved to {cleaned_path}")
+    # Overwrite the cleaned data file
+    df.to_csv(cleaned_path, index=False)
+    print(f"Cleaned data saved to {cleaned_path}")
 
 
 if __name__ == "__main__":

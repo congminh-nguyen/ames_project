@@ -2,17 +2,15 @@ import math
 from itertools import combinations
 from typing import List, Optional, Tuple, Union
 
-import ipywidgets as widgets
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from IPython.display import clear_output, display
 from scipy import stats
 from scipy.stats import gaussian_kde
 
 
-def output_distribution_plotting(
+def target_distribution_plotting(
     df: pd.DataFrame, target_col: str, alpha: float = 0.10
 ) -> None:
     """
@@ -106,6 +104,32 @@ def output_distribution_plotting(
     plt.figure(figsize=(14, 6))
     stats.probplot(df[target_col], dist="norm", plot=plt)
     plt.title("QQ Plot of Sale Price")
+    plt.show()
+
+    # Log-transformed distribution plots
+    log_target_col = np.log(df[target_col])
+    plt.figure(figsize=(14, 4))
+    plt.hist(log_target_col, bins=50, rwidth=0.8, alpha=0.7)
+    log_density = gaussian_kde(log_target_col)
+    log_xs = np.linspace(log_target_col.min(), log_target_col.max(), 200)
+    log_density_scaled = (
+        log_density(log_xs)
+        * len(log_target_col)
+        * (log_target_col.max() - log_target_col.min())
+        / 50
+    )
+    plt.plot(log_xs, log_density_scaled, linewidth=2, label="Log Density")
+    plt.title("Log-Transformed House Price Distribution in Ames, Iowa")
+    plt.xlabel("Log Sale Price")
+    plt.ylabel("Number of Houses")
+    plt.legend()
+    plt.grid(False)
+    plt.show()
+
+    # Log-transformed QQ plot
+    plt.figure(figsize=(14, 6))
+    stats.probplot(log_target_col, dist="norm", plot=plt)
+    plt.title("QQ Plot of Log-Transformed Sale Price")
     plt.show()
 
 
@@ -309,7 +333,7 @@ def box_plot_dist(
     plt.show()
 
 
-def interactive_feature_distribution_plots(
+def plot_feature_distributions_interactive(
     df: pd.DataFrame,
     nominal_list: List[str],
     ordinal_list: List[str],
@@ -317,105 +341,103 @@ def interactive_feature_distribution_plots(
     discrete_list: List[str],
 ) -> None:
     """
-    Interactive function to plot distributions for features based on their type.
-    Allows user to select feature type and plots distributions for all relevant features.
-    Uses provided feature type lists: nominal, ordinal, continuous, discrete.
+    Interactive plotting of feature distributions based on user-selected type.
+    Runs interactively in Jupyter Notebook with text-based input.
 
     Args:
-        df (pd.DataFrame): DataFrame containing the data.
-        nominal_list (list): List of nominal features.
-        ordinal_list (list): List of ordinal features.
-        continuous_list (list): List of continuous features.
-        discrete_list (list): List of discrete features.
+        df (pd.DataFrame): DataFrame containing the data
+        nominal_list (list): List of nominal features
+        ordinal_list (list): List of ordinal features
+        continuous_list (list): List of continuous features
+        discrete_list (list): List of discrete features
     """
-    # Create feature type dropdown
-    type_select = widgets.Dropdown(
-        options=["Nominal", "Ordinal", "Continuous", "Discrete"],
-        description="Feature Type:",
-        style={"description_width": "initial"},
-        layout={"width": "300px"},
-    )
+    type_map = {
+        "Nominal": nominal_list,
+        "Ordinal": ordinal_list,
+        "Continuous": continuous_list,
+        "Discrete": discrete_list,
+    }
 
-    # Create output widget for plots
-    output = widgets.Output()
+    while True:
+        # Prompt the user for input
+        feature_type = input(
+            "Enter the feature type to plot (Nominal, Ordinal, Continuous, Discrete, or 'exit' to quit): "
+        ).strip()
 
-    def plot_individual_feature_distributions(*args):
-        """Plot distributions for all features of the selected type"""
-        with output:
-            clear_output(wait=True)
-            type_map = {
-                "Nominal": nominal_list,
-                "Ordinal": ordinal_list,
-                "Continuous": continuous_list,
-                "Discrete": discrete_list,
-            }
-            selected_features = type_map[type_select.value]
+        if feature_type.lower() == "exit":
+            print("Exiting the interactive plotting.")
+            break
 
-            num_plots = len(selected_features)
-            num_cols = 4
-            num_rows = (num_plots + num_cols - 1) // num_cols
+        if feature_type not in type_map:
+            print(
+                "Invalid feature type! Please enter one of: Nominal, Ordinal, Continuous, or Discrete."
+            )
+            continue
 
-            fig, axes = plt.subplots(num_rows, num_cols, figsize=(15, 5 * num_rows))
-            axes = axes.flatten()
+        selected_features = type_map[feature_type]
+        if not selected_features:
+            print(f"No features found for type '{feature_type}'.")
+            continue
 
-            for i, feature in enumerate(selected_features):
-                ax = axes[i]
+        num_plots = len(selected_features)
+        num_cols = 4
+        num_rows = (num_plots + num_cols - 1) // num_cols
 
-                if type_select.value in ["Nominal", "Ordinal"]:
-                    # Bar plot for categorical variables
-                    value_counts = (
-                        df[feature].value_counts().sort_values(ascending=False)
-                    )
-                    sns.barplot(x=value_counts.index, y=value_counts.values, ax=ax)
-                    ax.set_xticks(range(len(value_counts)))
-                    ax.set_xticklabels(value_counts.index, rotation=45, ha="right")
+        fig, axes = plt.subplots(num_rows, num_cols, figsize=(15, 5 * num_rows))
+        axes = axes.flatten()
 
-                elif type_select.value == "Discrete":
-                    # Bar plot with count for discrete numerical variables
-                    sns.histplot(data=df, x=feature, discrete=True, ax=ax)
-
-                else:  # Continuous
-                    # Histogram with KDE for continuous variables
-                    sns.histplot(data=df, x=feature, kde=True, ax=ax)
-
-                ax.set_title(f"{feature} ({type_select.value})")
-                ax.set_xlabel(feature)
-                ax.set_ylabel("Count")
-
-                # Add summary statistics
-                if type_select.value in ["Discrete", "Continuous"]:
-                    stats_text = f"Mean: {df[feature].mean():.2f}\n"
-                    stats_text += f"Median: {df[feature].median():.2f}\n"
-                    stats_text += f"Std: {df[feature].std():.2f}"
+        for i, feature in enumerate(selected_features):
+            ax = axes[i]
+            if feature_type in ["Nominal", "Ordinal"]:
+                # Bar plot for categorical variables
+                value_counts = df[feature].value_counts()
+                if "year" in feature.lower():
+                    value_counts = value_counts.sort_index()
                 else:
-                    stats_text = f"Mode: {df[feature].mode()[0]}\n"
-                    stats_text += f"Unique Values: {df[feature].nunique()}"
+                    value_counts = value_counts.sort_values(ascending=False)
 
-                ax.text(
-                    0.95,
-                    0.95,
-                    stats_text,
-                    transform=ax.transAxes,
-                    verticalalignment="top",
-                    horizontalalignment="right",
-                    bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
-                )
+                sns.barplot(x=value_counts.index, y=value_counts.values, ax=ax)
+                ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right")
 
-            # Hide any unused subplots
-            for j in range(i + 1, len(axes)):
-                fig.delaxes(axes[j])
+            elif feature_type == "Discrete":
+                # Bar plot for discrete numerical variables
+                sns.histplot(data=df, x=feature, discrete=True, ax=ax)
 
-            plt.tight_layout()
-            plt.show()
+            else:  # Continuous
+                # Histogram with KDE for continuous variables
+                sns.histplot(data=df, x=feature, kde=True, ax=ax)
 
-    # Set up observer
-    type_select.observe(plot_individual_feature_distributions, "value")
+            ax.set_title(f"{feature}")
+            ax.set_xlabel(feature)
+            ax.set_ylabel("Count")
 
-    # Display widgets
-    display(widgets.VBox([type_select, output]))
+            # Add summary statistics
+            if feature_type in ["Discrete", "Continuous"]:
+                stats_text = f"Mean: {df[feature].mean():.2f}\n"
+                stats_text += f"Median: {df[feature].median():.2f}\n"
+                stats_text += f"Std: {df[feature].std():.2f}"
+            else:
+                stats_text = f"Unique Values: {df[feature].nunique()}"
+
+            ax.text(
+                0.95,
+                0.95,
+                stats_text,
+                transform=ax.transAxes,
+                verticalalignment="top",
+                horizontalalignment="right",
+                bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
+            )
+
+        # Hide unused subplots
+        for j in range(i + 1, len(axes)):
+            fig.delaxes(axes[j])
+
+        plt.tight_layout()
+        plt.show()
 
 
-def interactive_feature_target_distribution_plots(
+def plot_feature_target_relationships_interactive(
     df: pd.DataFrame,
     nominal_list: List[str],
     ordinal_list: List[str],
@@ -424,9 +446,8 @@ def interactive_feature_target_distribution_plots(
     target_col: str,
 ) -> None:
     """
-    Interactive function to plot feature relationships with target variable based on feature type.
-    For categorical features (nominal/ordinal): Shows box plots of target by category
-    For numerical features (continuous/discrete): Shows scatter plots with trend lines
+    Interactive plotting of feature-target relationships based on user-selected type.
+    Runs interactively in Jupyter Notebook with text-based input.
 
     Args:
         df (pd.DataFrame): DataFrame containing the data
@@ -434,109 +455,97 @@ def interactive_feature_target_distribution_plots(
         ordinal_list (list): List of ordinal features
         continuous_list (list): List of continuous features
         discrete_list (list): List of discrete features
-        target_col (str): Name of target variable column. Defaults to 'saleprice'
+        target_col (str): Name of the target variable column
     """
-    # Create feature type dropdown
-    type_select = widgets.Dropdown(
-        options=["Nominal", "Ordinal", "Continuous", "Discrete"],
-        description="Feature Type:",
-        style={"description_width": "initial"},
-        layout={"width": "300px"},
-    )
+    type_map = {
+        "Nominal": nominal_list,
+        "Ordinal": ordinal_list,
+        "Continuous": continuous_list,
+        "Discrete": discrete_list,
+    }
 
-    # Create output widget for plots
-    output = widgets.Output()
+    while True:
+        # Prompt the user for input
+        feature_type = input(
+            "Enter the feature type to plot (Nominal, Ordinal, Continuous, Discrete, or 'exit' to quit): "
+        ).strip()
 
-    def plot_feature_target_relationships(*args):
-        """Plot relationships between features and target based on selected type"""
-        with output:
-            clear_output(wait=True)
-            type_map = {
-                "Nominal": nominal_list,
-                "Ordinal": ordinal_list,
-                "Continuous": continuous_list,
-                "Discrete": discrete_list,
-            }
-            selected_features = type_map[type_select.value]
+        if feature_type.lower() == "exit":
+            print("Exiting the interactive plotting.")
+            break
 
-            num_plots = len(selected_features)
-            num_cols = 4
-            num_rows = (num_plots + num_cols - 1) // num_cols
+        if feature_type not in type_map:
+            print(
+                "Invalid feature type! Please enter one of: Nominal, Ordinal, Continuous, or Discrete."
+            )
+            continue
 
-            fig, axes = plt.subplots(num_rows, num_cols, figsize=(15, 5 * num_rows))
-            axes = axes.flatten()
+        selected_features = type_map[feature_type]
+        if not selected_features:
+            print(f"No features found for type '{feature_type}'.")
+            continue
 
-            for i, feature in enumerate(selected_features):
-                ax = axes[i]
+        num_plots = len(selected_features)
+        num_cols = 4
+        num_rows = (num_plots + num_cols - 1) // num_cols
 
-                if type_select.value in ["Nominal", "Ordinal"]:
-                    # Calculate mean target value for each category and sort
+        fig, axes = plt.subplots(num_rows, num_cols, figsize=(15, 5 * num_rows))
+        axes = axes.flatten()
+
+        for i, feature in enumerate(selected_features):
+            ax = axes[i]
+
+            if feature_type in ["Nominal", "Ordinal"]:
+                if "year" in feature.lower():
+                    category_order = sorted(df[feature].unique())
+                else:
                     category_means = (
                         df.groupby(feature)[target_col].mean().sort_values()
                     )
                     category_order = category_means.index.tolist()
 
-                    # Box plot for categorical variables vs target with ordered categories
-                    sns.boxplot(
-                        x=df[feature], y=df[target_col], ax=ax, order=category_order
-                    )
+                sns.boxplot(
+                    x=df[feature], y=df[target_col], ax=ax, order=category_order
+                )
+                ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right")
 
-                    # Rotate x-axis labels properly
-                    ticks = ax.get_xticks()
-                    labels = [label.get_text() for label in ax.get_xticklabels()]
-                    ax.set_xticks(ticks)
-                    ax.set_xticklabels(labels, rotation=45, ha="right")
+                counts = df[feature].value_counts()
+                stats_text = f"n categories: {len(counts)}"
 
-                    # Add category counts
-                    counts = df[feature].value_counts()
-                    stats_text = f"n categories: {len(counts)}\n"
-                    stats_text += f"Most common: {counts.index[0]} ({counts.iloc[0]})"
-
-                else:  # Continuous or Discrete
-                    # Scatter plot with trend line
-                    sns.scatterplot(data=df, x=feature, y=target_col, alpha=0.5, ax=ax)
-                    sns.regplot(
-                        data=df,
-                        x=feature,
-                        y=target_col,
-                        scatter=False,
-                        color="red",
-                        ax=ax,
-                    )
-
-                    # Add correlation coefficient
-                    corr = df[feature].corr(df[target_col])
-                    stats_text = f"Correlation: {corr:.3f}\n"
-                    stats_text += f"Mean: {df[feature].mean():.2f}\n"
-                    stats_text += f"Std: {df[feature].std():.2f}"
-
-                ax.set_title(f"{feature} vs {target_col}")
-                ax.set_xlabel(feature)
-                ax.set_ylabel(target_col)
-
-                # Add stats text box
-                ax.text(
-                    0.95,
-                    0.95,
-                    stats_text,
-                    transform=ax.transAxes,
-                    verticalalignment="top",
-                    horizontalalignment="right",
-                    bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
+            else:  # Continuous or Discrete
+                sns.scatterplot(data=df, x=feature, y=target_col, alpha=0.5, ax=ax)
+                sns.regplot(
+                    data=df,
+                    x=feature,
+                    y=target_col,
+                    scatter=False,
+                    color="red",
+                    ax=ax,
                 )
 
-            # Hide unused subplots
-            for j in range(i + 1, len(axes)):
-                fig.delaxes(axes[j])
+                corr = df[feature].corr(df[target_col])
+                stats_text = f"Correlation: {corr:.3f}"
 
-            plt.tight_layout()
-            plt.show()
+            ax.set_title(f"{feature} vs {target_col}")
+            ax.set_xlabel(feature)
+            ax.set_ylabel(target_col)
 
-    # Set up observer
-    type_select.observe(plot_feature_target_relationships, "value")
+            ax.text(
+                0.95,
+                0.95,
+                stats_text,
+                transform=ax.transAxes,
+                verticalalignment="top",
+                horizontalalignment="right",
+                bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
+            )
 
-    # Display widgets
-    display(widgets.VBox([type_select, output]))
+        # Hide unused subplots
+        for j in range(i + 1, len(axes)):
+            fig.delaxes(axes[j])
+
+        plt.tight_layout()
+        plt.show()
 
 
 def anova_categorical_feature_importance(
@@ -756,4 +765,96 @@ def plot_numerical_correlation_matrix(
 
     # Add more padding to prevent label cutoff
     plt.tight_layout(pad=1.5)
+    plt.show()
+
+
+def plot_feature_histograms(df, columns=None, n_cols=3):
+    """
+    Plot histograms for specified columns in a dataframe.
+
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        The input dataframe containing the features
+    columns : list or None, optional
+        List of column names to plot. If None, uses all columns in df
+    n_cols : int, optional
+        Number of columns in the subplot grid
+
+    Returns:
+    --------
+    None
+        Displays the plot with histograms
+    """
+    # Get columns to plot
+    plot_cols = columns if columns is not None else df.columns
+
+    # Calculate number of rows needed
+    n_rows = (len(plot_cols) + n_cols - 1) // n_cols
+
+    # Create figure
+    plt.figure(figsize=(20, 30))
+
+    # Plot each feature
+    for i, col in enumerate(plot_cols):
+        plt.subplot(n_rows, n_cols, i + 1)
+
+        if df[col].dtype in ["int64", "float64"]:
+            # For numeric columns
+            plt.hist(df[col], bins=30)
+        else:
+            # For categorical columns
+            df[col].value_counts().plot(kind="bar")
+            plt.xticks(rotation=45, ha="right")
+
+        plt.title(col)
+        plt.tight_layout()
+
+    plt.show()
+
+
+def plot_interaction_effects(
+    df: pd.DataFrame,
+    interactions: List[Tuple[str, str, str]],
+    figsize: Tuple[int, int] = (12, 15),
+) -> None:
+    """
+    Plot interaction effects between variables and their impact on a target variable.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing the variables
+        interactions (List[Tuple[str, str, str]]): List of tuples containing:
+            (x_variable, target_variable, interaction_variable)
+        figsize (Tuple[int, int]): Figure size as (width, height)
+    """
+    n_plots = len(interactions)
+    fig, axes = plt.subplots(n_plots, 1, figsize=figsize)
+
+    if n_plots == 1:
+        axes = [axes]
+
+    for ax, (x_var, target_var, group_var) in zip(axes, interactions):
+        # Create scatter plot
+        sns.scatterplot(data=df, x=x_var, y=target_var, hue=group_var, alpha=0.6, ax=ax)
+
+        # Add trend lines for each category
+        for category in df[group_var].unique():
+            mask = df[group_var] == category
+            sns.regplot(
+                data=df[mask],
+                x=x_var,
+                y=target_var,
+                scatter=False,
+                ax=ax,
+                label=f"Trend {category}",
+            )
+
+        # Set labels and title
+        ax.set_title(
+            f'{x_var.replace("_", " ").title()} vs {target_var.replace("_", " ").title()} by {group_var.replace("_", " ").title()}'
+        )
+        ax.set_xlabel(x_var.replace("_", " ").title())
+        ax.set_ylabel(target_var.replace("_", " ").title())
+
+    plt.tight_layout()
     plt.show()

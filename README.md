@@ -176,6 +176,12 @@ iowa_dream/
 │   ├── AmesHousing.csv
 ```
 
+### **(Step 6:) You can directly get the cleaned data from the `_rawfile` directory or run the `load_and_clean.py` script to get the cleaned data.**
+
+```bash
+python iowa_dream/integration_scripts/load_and_clean.py
+```
+
 ---
 
 ### **Additional Notes**

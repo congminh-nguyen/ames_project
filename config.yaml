@@ -32,7 +32,7 @@ data_dict:
       - pool_qu
       - fence
   nominal_columns:
-    count: 23
+    count: 28
     columns:
       - ms_subclass
       - ms_zoning
@@ -57,11 +57,14 @@ data_dict:
       - sale_type
       - sale_condition
       - misc_feature
-  discrete_columns:
-    count: 14
-    columns:
       - year_blt
       - year_remod/add
+      - year_sold
+      - garage_year_blt
+      - mo_sold
+  discrete_columns:
+    count: 9
+    columns:
       - bsmt_full_bath
       - bsmt_half_bath
       - full_bath
@@ -70,10 +73,7 @@ data_dict:
       - kitchen_abvgr
       - totrms_abvgr
       - fireplaces
-      - garage_year_blt
       - garage_cars
-      - mo_sold
-      - year_sold
   continuous_columns:
     count: 19
     columns:
@@ -97,39 +97,48 @@ data_dict:
       - pool_area
       - misc_val
   continuous_target:
-      - saleprice
+    - saleprice
   identifiers:
     - pid
 
 ordinal_mappings:
-  - values: ['Av', 'Gd', 'Mn', 'No', 'NA']
-    mapping: {Av: 5, Gd: 4, Mn: 3, 'No': 2, NA: 1}
-  - values: ['Ex', 'Fa', 'Gd', 'TA', 'NA']
-    mapping: {Ex: 5, Fa: 4, Gd: 3, TA: 2, NA: 1}
-  - values: ['Ex', 'Fa', 'Gd', 'TA']
-    mapping: {Ex: 4, Fa: 3, Gd: 2, TA: 1}
-  - values: ['GdPrv', 'GdWo', 'MnPrv', 'MnWw', 'NA']
-    mapping: {GdPrv: 5, GdWo: 4, MnPrv: 3, MnWw: 2, NA: 1}
-  - values: ['Ex', 'Fa', 'Gd', 'Po', 'TA']
-    mapping: {Ex: 5, Fa: 4, Gd: 3, Po: 2, TA: 1}
-  - values: ['Ex', 'Fa', 'Gd', 'Po', 'TA', 'NA']
-    mapping: {Ex: 6, Fa: 5, Gd: 4, Po: 3, TA: 2, NA: 1}
-  - values: ['Mix', 'FuseP', 'FuseF', 'FuseA', 'SBrkr']
-    mapping: {Mix: 1, FuseP: 2, FuseF: 3, FuseA: 4, SBrkr: 5}
-  - values: ['Sal', 'Sev', 'Maj2', 'Maj1', 'Mod', 'Min2', 'Min1', 'Typ']
-    mapping: {Sal: 1, Sev: 2, Maj2: 3, Maj1: 4, Mod: 5, Min2: 6, Min1: 7, Typ: 8}
-  - values: ['N', 'P', 'Y']
-    mapping: {N: 1, P: 2, Y: 3}
-  - values: ['AllPub', 'NoSeWa', 'NoSewr']
-    mapping: {AllPub: 3, NoSeWa: 2, NoSewr: 1}
-  - values: ['GLQ', 'ALQ', 'BLQ', 'Rec', 'LwQ', 'Unf', 'NA']
-    mapping: {GLQ: 6, ALQ: 5, BLQ: 4, Rec: 3, LwQ: 2, Unf: 1, NA: 1}
-  - values: ['Gtl', 'Mod', 'Sev']
-    mapping: {Gtl: 3, Mod: 2, Sev: 1}
-  - values: ['IR3', 'IR2', 'IR1', 'Reg']
-    mapping: {IR3: 1, IR2: 2, IR1: 3, Reg: 4}
-  - values: ['Fin', 'RFn', 'Unf', 'NA']
-    mapping: {Fin: 4, RFn: 3, Unf: 2, NA: 1}
+  - name: "garage_qu"
+    values: ['Ex', 'Fa', 'Gd', 'NONE', 'Po', 'TA']
+    mapping: {Ex: 5, Fa: 2, Gd: 4, NONE: 0, Po: 1, TA: 3}
+
+  - name: "fireplace_qu"
+    values: ['Ex', 'Fa', 'Gd', 'NONE', 'Po', 'TA']
+    mapping: {Ex: 5, Fa: 2, Gd: 4, NONE: 0, Po: 1, TA: 3}
+
+  - name: "kitchen_qu"
+    values: ['Ex', 'Fa', 'Gd', 'Po', 'TA']
+    mapping: {Ex: 4, Fa: 1, Gd: 3, Po: 0, TA: 2}
+
+  - name: "heating_qu"
+    values: ['Ex', 'Fa', 'Gd', 'Po', 'TA']
+    mapping: {Ex: 4, Fa: 1, Gd: 3, Po: 0, TA: 2}
+
+  - name: "bsmt_qu"
+    values: ['Ex', 'Fa', 'Gd', 'NONE', 'Po', 'TA']
+    mapping: {Ex: 5, Fa: 2, Gd: 4, NONE: 0, Po: 1, TA: 3}
+
+  - name: "bsmt_cond"
+    values: ['Ex', 'Fa', 'Gd', 'NONE', 'Po', 'TA']
+    mapping: {Ex: 5, Fa: 2, Gd: 4, NONE: 0, Po: 1, TA: 3}
+
+  - name: "exter_cond"
+    values: ['Ex', 'Fa', 'Gd', 'Po', 'TA']
+    mapping: {Ex: 4, Fa: 3, Gd: 1, Po: 0, TA: 2}
+
+  - name: "lot_shape"
+    values: ['IR1', 'IR2', 'IR3', 'Reg']
+    mapping: {IR1: 1, IR2: 2, IR3: 3, Reg: 0}
+
+  - name: "paved_drive"
+    values: ['Y', 'P', 'N']
+    mapping: {'Y': 2, 'P': 1, 'N': 0}
+
+
 
 # Based on this plotting: https://www.tmwr.org/ames
 university_proximity:
@@ -174,8 +183,107 @@ university_proximity:
       - Blueste
       - GrnHill
 
-preliminary_dropped_features:
-  - garage_year_blt # highly correlated with year_blt and contains redundant information
-  - garage_cars # highly coreated with garage_area (this basically means size of garage in car capacity)
-  - bldg_type # this correlates with ms_subclass, which is a more detailed classification and seems to predict saleprice better
-  - house_style # this correlates with ms_subclass, which is a more detailed classification and seems to predict saleprice better
+cleaned_data_dict:
+  ordinal:
+    count: 12
+    columns:
+      - lot_shape
+      - overall_qu
+      - overall_cond
+      - exter_cond
+      - heating_qu
+      - kitchen_qu
+      - fireplace_qu
+      - garage_qu
+      - paved_drive
+      - neighborhood_score
+      - bsmt_total_score
+  nominal:
+    count: 15
+    columns:
+      - ms_subclass
+      - lot_config
+      - condition_1
+      - roof_style
+      - mas_vnr_type
+      - foundation
+      - heating
+      - electrical
+      - sale_type
+      - exterior_1st
+      - year_blt
+      - mo_sold
+      - recession_period
+      - university_proximity_category
+  discrete:
+    count: 6
+    columns:
+      - full_bath
+      - half_bath
+      - bedroom_abvgr
+      - kitchen_quality_score
+      - fire_place_score
+      - garage_cars
+  continuous:
+    count: 8
+    columns:
+      - lot_frontage
+      - lot_area
+      - mas_vnr_area
+      - bsmtfin_sf_1
+      - total_bsmt_sf
+      - 2nd_flr_sf
+      - gr_liv_area
+      - wood_deck_sf
+      - timing_remodel_index
+
+final_data_dict:
+  ordinal:
+    count: 8
+    columns:
+      - lot_shape
+      - overall_score
+      - exter_cond
+      - heating_qu
+      - garage_qu
+      - paved_drive
+      - bsmt_total_score
+      - neighborhood_score
+  nominal:
+    count: 16
+    columns:
+      - ms_subclass
+      - lot_config
+      - condition_1
+      - roof_style
+      - mas_vnr_type
+      - foundation
+      - heating
+      - electrical
+      - sale_type
+      - exterior_1st
+      - year_blt
+      - mo_sold
+      - fire_place_score
+      - kitchen_quality_score
+      - recession_period
+      - university_proximity_category
+  discrete:
+    count: 3
+    columns:
+      - total_bath
+      - bedroom_abvgr
+      - garage_cars
+  continuous:
+    count: 10
+    columns:
+      - lot_frontage
+      - lot_area
+      - mas_vnr_area
+      - bsmtfin_sf_1
+      - total_bsmt_sf
+      - 2nd_flr_sf
+      - gr_liv_area
+      - wood_deck_sf
+      - living_area_percentage
+      - timing_remodel_index
