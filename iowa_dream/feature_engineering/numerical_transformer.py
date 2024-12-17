@@ -1,91 +1,62 @@
+from typing import List, Optional, Union
+
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.exceptions import NotFittedError
+from sklearn.preprocessing import PowerTransformer, StandardScaler
 
 
-class RobustScalerWithIndicator(BaseEstimator, TransformerMixin):
-    def __init__(
-        self, add_indicator: bool = True, output_dataframe: bool = True
-    ) -> None:
-        self.add_indicator = add_indicator
-        self.output_dataframe = output_dataframe
+class NumericalTransformer(BaseEstimator, TransformerMixin):
+    def __init__(self):
+        self.scaler_ = StandardScaler()
+        self.power_transformer_ = PowerTransformer(method="yeo-johnson")
+        self.columns_: List[str] = []
 
-    def fit(self, X, y=None):
-        X = self._validate_input(X)
-        self.scalers_ = {}
-        self.has_zeros_ = {}
-        for col in X.columns:
-            values = X[col].values
-            center = np.median(values)
-            q1 = np.percentile(values, 25)
-            q3 = np.percentile(values, 75)
-            scale = q3 - q1
-            scale = scale if scale != 0 else 1.0
-            self.scalers_[col] = {"center": center, "scale": scale}
-            # Check if column has any zeros
-            self.has_zeros_[col] = np.any(values == 0)
+    def fit(
+        self,
+        X: Union[pd.DataFrame, np.ndarray],
+        y: Optional[Union[pd.Series, np.ndarray]] = None,
+    ) -> "NumericalTransformer":
+        if not isinstance(X, pd.DataFrame):
+            raise ValueError("Input must be a pandas DataFrame")
+
+        self.columns_ = X.columns.tolist()
+
+        # First apply Yeo-Johnson transform
+        self.power_transformer_.fit(X)
+
+        # Then fit standard scaler
+        X_transformed = self.power_transformer_.transform(X)
+        self.scaler_.fit(X_transformed)
+
         return self
 
-    def transform(self, X):
-        if not hasattr(self, "scalers_"):
+    def transform(self, X: Union[pd.DataFrame, np.ndarray]) -> pd.DataFrame:
+        if not hasattr(self, "columns_"):
             raise NotFittedError(
-                "This RobustScalerWithIndicator instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator."
+                "NumericalTransformer is not fitted yet. Call 'fit' first."
             )
-        X = self._validate_input(X)
 
-        # Check for missing columns
-        missing_cols = set(self.scalers_.keys()) - set(X.columns)
+        if not isinstance(X, pd.DataFrame):
+            raise ValueError("Input must be a pandas DataFrame")
+
+        # Check if all required columns are present
+        missing_cols = set(self.columns_) - set(X.columns)
         if missing_cols:
-            raise ValueError(f"Missing columns in input: {missing_cols}")
+            raise KeyError(list(missing_cols)[0])
 
-        X_transformed = pd.DataFrame(index=X.index)
-        for (
-            col
-        ) in (
-            self.scalers_.keys()
-        ):  # Iterate through fitted columns instead of input columns
-            scaler_params = self.scalers_[col]
-            new_col = X[col].astype(float).copy()
-            center = scaler_params["center"]
-            scale = scaler_params["scale"]
-            new_col = (new_col - center) / scale
-            X_transformed[col] = new_col
-            # Only add indicator if column had zeros during fit
-            if self.add_indicator and self.has_zeros_[col]:
-                # Double check current data also has zeros before adding indicator
-                if np.any(X[col] == 0):
-                    X_transformed[f"{col}_zero_indicator"] = (X[col] == 0).astype(int)
-        return X_transformed if self.output_dataframe else X_transformed.values
+        # First apply Yeo-Johnson transform
+        X_transformed = self.power_transformer_.transform(X)
 
-    def inverse_transform(self, X):
-        if not hasattr(self, "scalers_"):
-            raise NotFittedError(
-                "This RobustScalerWithIndicator instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator."
-            )
-        X = self._validate_input(X)
+        # Then apply standard scaling
+        X_transformed = self.scaler_.transform(X_transformed)
 
-        # Check for missing columns (excluding indicator columns)
-        original_cols = set(self.scalers_.keys())
-        input_cols = {col for col in X.columns if not col.endswith("_zero_indicator")}
-        missing_cols = original_cols - input_cols
-        if missing_cols:
-            raise ValueError(f"Missing columns in input: {missing_cols}")
+        return pd.DataFrame(X_transformed, columns=self.columns_, index=X.index)
 
-        X_inverse = pd.DataFrame(index=X.index)
-        for col in self.scalers_.keys():
-            scaler_params = self.scalers_[col]
-            new_col = X[col].astype(float).copy()
-            center = scaler_params["center"]
-            scale = scaler_params["scale"]
-            new_col = (new_col * scale) + center
-            X_inverse[col] = new_col
-        return X_inverse if self.output_dataframe else X_inverse.values
-
-    def _validate_input(self, X):
-        if isinstance(X, pd.DataFrame):
-            return X
-        elif isinstance(X, np.ndarray):
-            return pd.DataFrame(X)
-        else:
-            raise ValueError("Input data must be a pandas DataFrame or numpy ndarray.")
+    def fit_transform(
+        self,
+        X: Union[pd.DataFrame, np.ndarray],
+        y: Optional[Union[pd.Series, np.ndarray]] = None,
+    ) -> pd.DataFrame:
+        return self.fit(X, y).transform(X)

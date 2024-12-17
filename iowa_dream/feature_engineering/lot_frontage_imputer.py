@@ -1,4 +1,3 @@
-# Import necessary libraries
 from typing import List, Optional, Union
 
 import numpy as np
@@ -6,48 +5,82 @@ import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
-# Define the GroupMedianImputer class
 class GroupMedianImputer(BaseEstimator, TransformerMixin):
-    def __init__(self, group_cols: List[str], target_col: str) -> None:
-        """
-        Custom imputer to fill missing values using group-wise median.
+    """Impute missing values using group-wise median.
 
-        Parameters:
-        group_cols: list of str
-            Columns to group by for calculating medians.
-        target_col: str
-            Column to impute missing values in.
-        """
+    Parameters
+    ----------
+    group_cols : List[str]
+        Columns to group by for calculating medians.
+    target_col : str
+        Column to impute missing values in.
+
+    Attributes
+    ----------
+    group_cols : List[str]
+        Columns to group by for calculating medians.
+    target_col : str
+        Column to impute missing values in.
+    """
+
+    def __init__(self, group_cols: List[str], target_col: str) -> None:
         self.group_cols = group_cols
         self.target_col = target_col
 
     def fit(
         self, X: pd.DataFrame, y: Optional[Union[pd.Series, np.ndarray]] = None
     ) -> "GroupMedianImputer":
-        """
-        Fit the imputer. No operation needed here, as medians are calculated dynamically during transform.
+        """Fit the imputer.
 
-        Parameters:
-        X: pandas.DataFrame
-            DataFrame containing the data.
-        y: Ignored
-            Not used, exists for compatibility with scikit-learn pipelines.
+        Parameters
+        ----------
+        X : pd.DataFrame
+            Input data to fit.
+        y : Optional[Union[pd.Series, np.ndarray]], default=None
+            Target values. Not used, present for API consistency.
 
-        Returns:
-        self
+        Returns
+        -------
+        self : GroupMedianImputer
+            Returns self.
+
+        Raises
+        ------
+        ValueError
+            If input is not a pandas DataFrame.
         """
         if not isinstance(X, pd.DataFrame):
             raise ValueError("Input must be a pandas DataFrame.")
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data by imputing missing values.
+
+        Parameters
+        ----------
+        X : pd.DataFrame
+            Input data to transform.
+
+        Returns
+        -------
+        pd.DataFrame
+            Data with missing values imputed.
+
+        Raises
+        ------
+        ValueError
+            If input is not a pandas DataFrame.
+        """
         if not isinstance(X, pd.DataFrame):
             raise ValueError("Input must be a pandas DataFrame.")
 
+        # Create copy to avoid modifying original data
+        X_copy = X.copy()
+
         # Separate missing and non-missing data
-        missing_mask = X[self.target_col].isna()
-        non_missing_data = X.loc[~missing_mask]
-        missing_data = X.loc[missing_mask]
+        missing_mask = X_copy[self.target_col].isna()
+        non_missing_data = X_copy.loc[~missing_mask]
+        missing_data = X_copy.loc[missing_mask]
 
         # Calculate medians for non-missing data, grouped by group_cols
         group_medians = (
@@ -78,17 +111,18 @@ class GroupMedianImputer(BaseEstimator, TransformerMixin):
     def fit_transform(
         self, X: pd.DataFrame, y: Optional[Union[pd.Series, np.ndarray]] = None
     ) -> pd.DataFrame:
-        """
-        Fit the imputer and transform the data.
+        """Fit the imputer and transform the data.
 
-        Parameters:
-        X: pandas.DataFrame
-            DataFrame containing the data.
-        y: Ignored
-            Not used, exists for compatibility with scikit-learn pipelines.
+        Parameters
+        ----------
+        X : pd.DataFrame
+            Input data to fit and transform.
+        y : Optional[Union[pd.Series, np.ndarray]], default=None
+            Target values. Not used, present for API consistency.
 
-        Returns:
-        X_transformed: pandas.DataFrame
-            DataFrame with missing values imputed.
+        Returns
+        -------
+        pd.DataFrame
+            Data with missing values imputed.
         """
         return self.fit(X, y).transform(X)

@@ -1,85 +1,49 @@
-from typing import List, Optional
+from typing import Optional
 
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
-class NominalTransformer(BaseEstimator, TransformerMixin):
-    def __init__(
-        self, bins: Optional[List[int]] = None, labels: Optional[List[str]] = None
-    ) -> None:
-        # Define default bins and labels for age-based ranges
-        self.bins = bins if bins else [0, 10, 30, 50, 150]
-        self.labels = labels if labels else ["0-10", "11-30", "31-50", "51+"]
-
-    def fit(
-        self, X: pd.DataFrame, y: Optional[pd.Series] = None
-    ) -> "NominalTransformer":
-        # No fitting necessary for this transformer
-        return self
-
-    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        # Ensure X is a DataFrame
-        X = pd.DataFrame(X).copy()
-
-        # Check required columns
-        required_columns = {
-            "year_blt",
-            "year_sold",
-            "year_remod/add",
-            "exterior_1st",
-            "exterior_2nd",
-        }
-        if not required_columns.issubset(X.columns):
-            raise ValueError(
-                f"Input DataFrame must contain the following columns: {required_columns}"
-            )
-
-        # 1. Replace year_remod/add: Binary indicator for remodeling
-        # Changed to check if remod year equals sale year instead of build year
-        X["year_remod/add"] = (X["year_remod/add"] > X["year_blt"]).astype(int)
-
-        # 2. Replace year_blt: Bin the age of the house at the time of sale
-        X["year_blt"] = X["year_sold"] - X["year_blt"]  # Calculate age at sale
-        X["year_blt"] = pd.cut(
-            X["year_blt"], bins=self.bins, labels=self.labels, right=False
-        )
-
-        # 3. Replace exterior_2nd: Binary indicator for matching exterior materials
-        X["exterior_2nd"] = (X["exterior_1st"] == X["exterior_2nd"]).astype(int)
-
-        return X
-
-
 class OrdinalMerger(BaseEstimator, TransformerMixin):
-    def __init__(self, min_obs=10):
-        """
-        Custom transformer for ordinal variables.
+    def __init__(self, min_obs: int = 10) -> None:
+        """Initialize OrdinalMerger.
 
-        Parameters:
-        - min_obs: Minimum number of observations required for each category. If not met,
-                   categories will be merged with adjacent categories to maintain ordinality.
+        Parameters
+        ----------
+        min_obs : int, default=10
+            Minimum number of observations required for each category. If not met,
+            categories will be merged with adjacent categories to maintain ordinality.
         """
         self.min_obs = min_obs
-        self.mapping_ = {}
+        self.mapping_: dict = {}
 
-    def fit(self, X, y=None):
-        """
-        Fit the transformer to the data.
+    def fit(self, X: pd.DataFrame, y: Optional[pd.Series] = None) -> "OrdinalMerger":
+        """Fit the transformer to the data.
 
-        Parameters:
-        - X: A pandas DataFrame containing ordinal variables.
-        - y: Ignored (compatibility with scikit-learn pipelines).
+        Parameters
+        ----------
+        X : pd.DataFrame
+            Input features containing ordinal variables
+        y : Optional[pd.Series], default=None
+            Target variable (unused)
 
-        Returns:
-        - self: Fitted transformer.
+        Returns
+        -------
+        self : OrdinalMerger
+            Returns self
+
+        Raises
+        ------
+        ValueError
+            If input is not a pandas DataFrame
         """
         if not isinstance(X, pd.DataFrame):
             raise ValueError("Input must be a pandas DataFrame.")
 
         self.mapping_ = {}
 
+        # Handle each column separately
         for col in X.columns:
             value_counts = X[col].value_counts().sort_index()
             categories = value_counts.index.tolist()
@@ -133,18 +97,117 @@ class OrdinalMerger(BaseEstimator, TransformerMixin):
 
         return self
 
-    def transform(self, X):
-        """
-        Transform the data by merging categories as determined during fitting.
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data by merging categories.
 
-        Parameters:
-        - X: A pandas DataFrame containing ordinal variables.
+        Parameters
+        ----------
+        X : pd.DataFrame
+            Input features containing ordinal variables
 
-        Returns:
-        - X_transformed: Transformed DataFrame with merged categories.
+        Returns
+        -------
+        pd.DataFrame
+            Transformed DataFrame with merged categories
+
+        Raises
+        ------
+        ValueError
+            If input is not a pandas DataFrame or if transformer has not been fitted
         """
         if not isinstance(X, pd.DataFrame):
             raise ValueError("Input must be a pandas DataFrame.")
+
+        if not hasattr(self, "mapping_"):
+            raise ValueError("OrdinalMerger has not been fitted yet.")
+
+        X_transformed = X.copy()
+
+        for col in X.columns:
+            if col in self.mapping_:
+                X_transformed[col] = X[col].map(self.mapping_[col])
+
+        return X_transformed
+
+    def fit_transform(
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> pd.DataFrame:
+        """Fit and transform the data.
+
+        Parameters
+        ----------
+        X : pd.DataFrame
+            Input features containing ordinal variables
+        y : Optional[pd.Series], default=None
+            Target variable (unused)
+
+        Returns
+        -------
+        pd.DataFrame
+            Transformed DataFrame with merged categories
+        """
+        return self.fit(X, y).transform(X)
+
+
+class NominalGrouper(BaseEstimator, TransformerMixin):
+    def __init__(self, min_obs: int = 10) -> None:
+        """Initialize NominalGrouper.
+
+        Parameters
+        ----------
+        min_obs : int, default=10
+            Minimum number of observations required for each category.
+            Categories with fewer observations will be grouped into 'Other'.
+        """
+        self.min_obs = min_obs
+        self.mapping_: dict = {}
+
+    def fit(self, X: pd.DataFrame, y=None):
+        """Fit the transformer by identifying infrequent categories.
+
+        Parameters
+        ----------
+        X : pd.DataFrame
+            Input features containing nominal variables
+        """
+        if not isinstance(X, pd.DataFrame):
+            raise ValueError("Input must be a pandas DataFrame.")
+
+        self.mapping_ = {}
+
+        for col in X.columns:
+            # Skip year and month columns
+            if "year" in col.lower() or col == "mo_sold":
+                continue
+
+            value_counts = X[col].value_counts()
+            # Categories with counts below threshold get mapped to 'Other'
+            infrequent = value_counts[value_counts < self.min_obs].index
+            mapping = {
+                cat: "Other" if cat in infrequent else cat for cat in value_counts.index
+            }
+            self.mapping_[col] = mapping
+
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data by grouping infrequent categories.
+
+        Parameters
+        ----------
+        X : pd.DataFrame
+            Input features containing nominal variables
+
+        Returns
+        -------
+        pd.DataFrame
+            Transformed DataFrame with grouped categories
+        """
+        if not isinstance(X, pd.DataFrame):
+            raise ValueError("Input must be a pandas DataFrame.")
+
+        if not hasattr(self, "mapping_"):
+            raise ValueError("NominalGrouper has not been fitted yet.")
 
         X_transformed = X.copy()
 

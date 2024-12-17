@@ -10,7 +10,7 @@ from scipy import stats
 from scipy.stats import gaussian_kde
 
 
-def output_distribution_plotting(
+def target_distribution_plotting(
     df: pd.DataFrame, target_col: str, alpha: float = 0.10
 ) -> None:
     """
@@ -104,6 +104,32 @@ def output_distribution_plotting(
     plt.figure(figsize=(14, 6))
     stats.probplot(df[target_col], dist="norm", plot=plt)
     plt.title("QQ Plot of Sale Price")
+    plt.show()
+
+    # Log-transformed distribution plots
+    log_target_col = np.log(df[target_col])
+    plt.figure(figsize=(14, 4))
+    plt.hist(log_target_col, bins=50, rwidth=0.8, alpha=0.7)
+    log_density = gaussian_kde(log_target_col)
+    log_xs = np.linspace(log_target_col.min(), log_target_col.max(), 200)
+    log_density_scaled = (
+        log_density(log_xs)
+        * len(log_target_col)
+        * (log_target_col.max() - log_target_col.min())
+        / 50
+    )
+    plt.plot(log_xs, log_density_scaled, linewidth=2, label="Log Density")
+    plt.title("Log-Transformed House Price Distribution in Ames, Iowa")
+    plt.xlabel("Log Sale Price")
+    plt.ylabel("Number of Houses")
+    plt.legend()
+    plt.grid(False)
+    plt.show()
+
+    # Log-transformed QQ plot
+    plt.figure(figsize=(14, 6))
+    stats.probplot(log_target_col, dist="norm", plot=plt)
+    plt.title("QQ Plot of Log-Transformed Sale Price")
     plt.show()
 
 
@@ -739,4 +765,96 @@ def plot_numerical_correlation_matrix(
 
     # Add more padding to prevent label cutoff
     plt.tight_layout(pad=1.5)
+    plt.show()
+
+
+def plot_feature_histograms(df, columns=None, n_cols=3):
+    """
+    Plot histograms for specified columns in a dataframe.
+
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        The input dataframe containing the features
+    columns : list or None, optional
+        List of column names to plot. If None, uses all columns in df
+    n_cols : int, optional
+        Number of columns in the subplot grid
+
+    Returns:
+    --------
+    None
+        Displays the plot with histograms
+    """
+    # Get columns to plot
+    plot_cols = columns if columns is not None else df.columns
+
+    # Calculate number of rows needed
+    n_rows = (len(plot_cols) + n_cols - 1) // n_cols
+
+    # Create figure
+    plt.figure(figsize=(20, 30))
+
+    # Plot each feature
+    for i, col in enumerate(plot_cols):
+        plt.subplot(n_rows, n_cols, i + 1)
+
+        if df[col].dtype in ["int64", "float64"]:
+            # For numeric columns
+            plt.hist(df[col], bins=30)
+        else:
+            # For categorical columns
+            df[col].value_counts().plot(kind="bar")
+            plt.xticks(rotation=45, ha="right")
+
+        plt.title(col)
+        plt.tight_layout()
+
+    plt.show()
+
+
+def plot_interaction_effects(
+    df: pd.DataFrame,
+    interactions: List[Tuple[str, str, str]],
+    figsize: Tuple[int, int] = (12, 15),
+) -> None:
+    """
+    Plot interaction effects between variables and their impact on a target variable.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing the variables
+        interactions (List[Tuple[str, str, str]]): List of tuples containing:
+            (x_variable, target_variable, interaction_variable)
+        figsize (Tuple[int, int]): Figure size as (width, height)
+    """
+    n_plots = len(interactions)
+    fig, axes = plt.subplots(n_plots, 1, figsize=figsize)
+
+    if n_plots == 1:
+        axes = [axes]
+
+    for ax, (x_var, target_var, group_var) in zip(axes, interactions):
+        # Create scatter plot
+        sns.scatterplot(data=df, x=x_var, y=target_var, hue=group_var, alpha=0.6, ax=ax)
+
+        # Add trend lines for each category
+        for category in df[group_var].unique():
+            mask = df[group_var] == category
+            sns.regplot(
+                data=df[mask],
+                x=x_var,
+                y=target_var,
+                scatter=False,
+                ax=ax,
+                label=f"Trend {category}",
+            )
+
+        # Set labels and title
+        ax.set_title(
+            f'{x_var.replace("_", " ").title()} vs {target_var.replace("_", " ").title()} by {group_var.replace("_", " ").title()}'
+        )
+        ax.set_xlabel(x_var.replace("_", " ").title())
+        ax.set_ylabel(target_var.replace("_", " ").title())
+
+    plt.tight_layout()
     plt.show()

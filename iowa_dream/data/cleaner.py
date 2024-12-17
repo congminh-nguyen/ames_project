@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import pandas as pd
 
@@ -8,7 +8,7 @@ def simple_fill_missing_by_keywords(
 ) -> pd.DataFrame:
     """
     Fill missing values in columns containing any of the given keywords.
-    For categorical columns, fills with 'NA'.
+    For categorical columns, fills with 'NONE'.
     For numeric columns, fills with 0.
 
     Args:
@@ -31,7 +31,7 @@ def simple_fill_missing_by_keywords(
     for col in cols_to_fill:
         # Fill based on data type
         if df[col].dtype == "object":
-            df_filled[col] = df[col].fillna("NA")
+            df_filled[col] = df[col].fillna("NONE")
         else:
             df_filled[col] = df[col].fillna(0)
 
@@ -41,11 +41,11 @@ def simple_fill_missing_by_keywords(
 def garage_imputer(df: pd.DataFrame) -> pd.DataFrame:
     """
     Impute garage-related features in a specific order:
-    1. Redenote 'No Garage' garage_type as 'NA'
-    2. Fill missing garage_type with 'NA'
+    1. Redenote 'No Garage' garage_type as 'NONE'
+    2. Fill missing garage_type with 'NONE'
     3. Fix typo in garage_year_blt
     4. Fill missing garage_year_blt with year_blt
-    5. Fill missing garage quality metrics with 'NA'
+    5. Fill missing garage quality metrics with 'NONE'
     6. Fill missing numeric values with 0 only for houses with no garage or detached garage
 
     Args:
@@ -57,11 +57,11 @@ def garage_imputer(df: pd.DataFrame) -> pd.DataFrame:
     # Make a copy to avoid modifying original
     df = df.copy()
 
-    # 1. Redenote 'No Garage' garage_type as 'NA'
-    df.loc[df["garage_type"] == "No Garage", "garage_type"] = "NA"
+    # 1. Redenote 'No Garage' garage_type as 'NONE'
+    df.loc[df["garage_type"] == "No Garage", "garage_type"] = "NONE"
 
-    # 2. Fill missing garage_type with 'NA'
-    df["garage_type"] = df["garage_type"].fillna("NA")
+    # 2. Fill missing garage_type with 'NONE'
+    df["garage_type"] = df["garage_type"].fillna("NONE")
 
     # 3. Fix typo in garage_year_blt from 2207 to 2007
     df.loc[df["garage_year_blt"] == 2207, "garage_year_blt"] = 2007
@@ -71,12 +71,12 @@ def garage_imputer(df: pd.DataFrame) -> pd.DataFrame:
         df["garage_year_blt"].isnull(), "year_blt"
     ]
 
-    # 5. Fill missing garage quality metrics with 'NA'
+    # 5. Fill missing garage quality metrics with 'NONE'
     for col in ["garage_finish", "garage_qu", "garage_cond"]:
-        df[col] = df[col].fillna("NA")
+        df[col] = df[col].fillna("NONE")
 
     # 6. For houses with no garage or detached garage, fill missing numeric values with 0
-    mask = df["garage_type"].isin(["NA", "Detchd"])
+    mask = df["garage_type"].isin(["NONE", "Detchd"])
     for col in ["garage_cars", "garage_area"]:
         df.loc[mask & df[col].isnull(), col] = 0
 
@@ -85,29 +85,24 @@ def garage_imputer(df: pd.DataFrame) -> pd.DataFrame:
 
 def type_formatting(
     df: pd.DataFrame,
-    discrete_cols: List[str],
-    continuous_cols: List[str],
-    nominal_cols: Optional[List[str]] = None,
-    ordinal_cols: Optional[List[str]] = None,
-    ordinal_mappings: Optional[List[Dict[str, Any]]] = None,
+    ordinal_cols: List[str],
+    ordinal_mappings: List[Dict[str, Any]],
 ) -> pd.DataFrame:
     """
-    Convert column types based on their nature:
-    - Convert continuous integer columns to float
-    - Convert discrete float columns to integer
-    - Convert nominal numeric columns to string category
-    - Convert ordinal columns based on predefined mappings
-    Ignore NaN values during conversion.
+    Convert ordinal columns based on predefined mappings.
+
+    Args:
+        df: Input DataFrame
+        ordinal_cols: List of ordinal column names
+        ordinal_mappings: List of dictionaries containing value mappings for ordinal columns
+            Each dict must have 'values' and 'mapping' keys
+
+    Returns:
+        DataFrame with converted ordinal columns
     """
     df_converted = df.copy()
 
-    # Validate ordinal_mappings
-    if ordinal_mappings is None:
-        if ordinal_cols is not None:
-            raise ValueError(
-                "If ordinal_mappings is None, ordinal_cols should also be None or provide a list."
-            )
-        ordinal_mappings = []
+    # Validate ordinal_mappings format
     if not all(
         isinstance(entry, dict) and "values" in entry and "mapping" in entry
         for entry in ordinal_mappings
@@ -116,36 +111,19 @@ def type_formatting(
             "Each entry in ordinal_mappings must be a dictionary with 'values' and 'mapping' keys."
         )
 
-    # Convert continuous integer columns to float
-    for col in continuous_cols:
-        if pd.api.types.is_integer_dtype(df_converted[col]):
-            df_converted[col] = df_converted[col].astype(float)
-
-    # Convert discrete float columns to integer
-    for col in discrete_cols:
-        if pd.api.types.is_float_dtype(df_converted[col]):
-            df_converted[col] = df_converted[col].astype(
-                "Int64"
-            )  # Use 'Int64' to handle NaNs
-
-    # Convert nominal numeric columns to string category
-    if nominal_cols:
-        for col in nominal_cols:
-            if pd.api.types.is_numeric_dtype(df_converted[col]):
-                df_converted[col] = df_converted[col].astype(str)
+    # Create lookup of value sets to mappings
+    mappings = {
+        frozenset(entry["values"]): entry["mapping"] for entry in ordinal_mappings
+    }
 
     # Convert ordinal columns based on predefined mappings
-    if ordinal_cols:
-        mappings = {
-            frozenset(entry["values"]): entry["mapping"] for entry in ordinal_mappings
-        }
-        for col in ordinal_cols:
-            if pd.api.types.is_integer_dtype(df_converted[col]):
-                continue
+    for col in ordinal_cols:
+        if pd.api.types.is_integer_dtype(df_converted[col]):
+            continue
 
-            # Drop NaN values to ensure correct mapping
-            unique_values = frozenset(df_converted[col].unique())
-            if unique_values in mappings:
-                df_converted[col] = df_converted[col].map(mappings[unique_values])
+        # Find and apply mapping if column values match a mapping set
+        unique_values = frozenset(df_converted[col].unique())
+        if unique_values in mappings:
+            df_converted[col] = df_converted[col].map(mappings[unique_values])
 
     return df_converted
