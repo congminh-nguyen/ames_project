@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+from sklearn.compose import ColumnTransformer
 
 from iowa_dream.feature_engineering.categotical_transformer import (
     NominalGrouper,
@@ -73,3 +74,47 @@ def test_nominal_grouper_min_obs_3(nominal_data):
         }
     )
     pd.testing.assert_frame_equal(transformed, expected)
+
+
+def test_ordinal_merger_with_column_transformer(sample_data):
+    column_transformer = ColumnTransformer(
+        transformers=[
+            ("ordinal", OrdinalMerger(min_obs=3), ["col1"]),
+            ("passthrough", "passthrough", ["col2"]),
+        ]
+    )
+    transformed = column_transformer.fit_transform(sample_data)
+
+    expected = pd.DataFrame(
+        {"col1": [1, 1, 1, 2, 2, 2, 3, 3, 3, 3], "col2": [1, 2, 2, 2, 3, 3, 4, 4, 4, 4]}
+    )
+    pd.testing.assert_frame_equal(
+        pd.DataFrame(transformed, columns=["col1", "col2"]), expected
+    )
+
+
+def test_nominal_grouper_with_column_transformer(nominal_data):
+    column_transformer = ColumnTransformer(
+        transformers=[("nominal", NominalGrouper(min_obs=3), ["category"])]
+    )
+    transformed = column_transformer.fit_transform(nominal_data)
+
+    expected = pd.DataFrame(
+        {
+            "category": [
+                "Other",
+                "Other",
+                "B",
+                "B",
+                "B",
+                "Other",
+                "Other",
+                "Other",
+                "Other",
+                "Other",
+            ]
+        }
+    )
+    pd.testing.assert_frame_equal(
+        pd.DataFrame(transformed, columns=["category"]), expected
+    )

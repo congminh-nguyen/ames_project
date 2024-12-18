@@ -38,7 +38,6 @@ def main():
     # Remove outliers where the ground living area is greater than 4000 square feet. These are considered anomalies
     # that could skew the analysis.
     df = df[~(df.gr_liv_area > 4000)]
-
     # Step 2: Missing Value Imputation
     # Use keyword-based imputation
     df = simple_fill_missing_by_keywords(df, ["bsmt", "fireplace", "mas_vnr"])
@@ -55,51 +54,20 @@ def main():
     df = df[df["year_sold"] >= df["year_remod/add"]]
 
     # Drop features based on correlation analysis and highly correlated features
-    df = df.drop(
-        [
-            "bsmt_exposure",
-            "bsmt_full_bath",
-            "bsmt_half_bath",
-            "bsmt_unf_sf",
-            "bsmtfin_sf_2",
-            "bsmtfin_type_2",
-            "central_air",
-            "condition_2",
-            "enclosed_porch",
-            "exter_qu",
-            "exterior_2nd",
-            "fence",
-            "functional",
-            "garage_area",
-            "garage_cond",
-            "garage_finish",
-            "garage_type",
-            "garage_year_blt",
-            "house_style",
-            "land_contour",
-            "land_slope",
-            "low_qu_fin_sf",
-            "misc_feature",
-            "misc_val",
-            "ms_zoning",
-            "open_porch_sf",
-            "pool_area",
-            "pool_qu",
-            "roof_matl",
-            "sale_condition",
-            "screen_porch",
-            "street",
-            "totrms_abvgr",
-            "utilities",
-            "3ssn_porch",
-            "bldg_type",
-            "1st_flr_sf",
-            "alley",
-            "order",
-            "bsmtfin_type_1",
-        ],
-        axis=1,
+    # Get all columns from cleaned_data_dict
+    keep_columns = (
+        config["cleaned_data_dict"]["ordinal"]["columns"]
+        + config["cleaned_data_dict"]["nominal"]["columns"]
+        + config["cleaned_data_dict"]["discrete"]["columns"]
+        + config["cleaned_data_dict"]["continuous"]["columns"]
+        + ["saleprice", "pid"]
     )
+
+    # Drop any column not in keep_columns
+    columns_to_drop = [col for col in df.columns if col not in keep_columns] + [
+        "mas_vnr_area"
+    ]
+    df = df.drop(columns=columns_to_drop)
 
     # Step 3: Data Type Formatting
     # Load the data dictionary from the configuration to extract feature column
@@ -112,23 +80,15 @@ def main():
     df = type_formatting(
         df,
         [
-            "garage_qu",
-            "fireplace_qu",
-            "kitchen_qu",
-            "heating_qu",
+            "exter_qu",
             "bsmt_qu",
-            "bsmt_cond",
-            "lot_shape",
-            "exter_cond",
-            "paved_drive",
+            "bsmt_exposure",
+            "heating_qu",
+            "kitchen_qu",
+            "fireplace_qu",
         ],
         ordinal_mappings,
     )
-
-    # Step 4: Drop Unnecessary Features
-    # Drop features that are deemed unnecessary or redundant as specified in the configuration.
-    preliminary_dropped_features = config.get("preliminary_dropped_features", [])
-    df = df.drop(columns=preliminary_dropped_features, errors="ignore")
 
     # Create cleaned directory if it doesn't exist
     cleaned_dir.mkdir(parents=True, exist_ok=True)

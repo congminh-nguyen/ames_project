@@ -1,11 +1,9 @@
 from typing import List, Optional, Union
-
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
-
-class GroupMedianImputer(BaseEstimator, TransformerMixin):
+class LotFrontageGroupMedianImputer(BaseEstimator, TransformerMixin):
     """Impute missing values using group-wise median.
 
     Parameters
@@ -26,10 +24,51 @@ class GroupMedianImputer(BaseEstimator, TransformerMixin):
     def __init__(self, group_cols: List[str], target_col: str) -> None:
         self.group_cols = group_cols
         self.target_col = target_col
+        super().__init__()
+
+    def get_feature_names_out(self, input_features=None):
+        """Get output feature names.
+        
+        Parameters
+        ----------
+        input_features : list of str or None
+            Input features.
+            
+        Returns
+        -------
+        list of str
+            Output feature names.
+        """
+        return input_features
+
+    def set_output(self, *, transform=None):
+        """Set output container.
+        
+        Parameters
+        ----------
+        transform : {'default', 'pandas'}, default=None
+            Configure output of transform and fit_transform.
+
+            - 'default': Default output format of a transformer
+            - 'pandas': DataFrame output
+            - None: Transform configuration is unchanged
+            
+        Returns
+        -------
+        self
+            Transformer instance.
+        """
+        if transform not in ['default', 'pandas', None]:
+            raise ValueError(
+                "Valid values for transform are 'default', 'pandas', None. "
+                f"Got transform={transform!r}"
+            )
+        self._transform = transform
+        return self
 
     def fit(
         self, X: pd.DataFrame, y: Optional[Union[pd.Series, np.ndarray]] = None
-    ) -> "GroupMedianImputer":
+    ) -> "LotFrontageGroupMedianImputer":
         """Fit the imputer.
 
         Parameters
@@ -41,7 +80,7 @@ class GroupMedianImputer(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        self : GroupMedianImputer
+        self : LotFrontageGroupMedianImputer
             Returns self.
 
         Raises
@@ -51,6 +90,12 @@ class GroupMedianImputer(BaseEstimator, TransformerMixin):
         """
         if not isinstance(X, pd.DataFrame):
             raise ValueError("Input must be a pandas DataFrame.")
+        
+        # Validate that required columns exist
+        missing_cols = [col for col in self.group_cols + [self.target_col] if col not in X.columns]
+        if missing_cols:
+            raise ValueError(f"Missing required columns: {missing_cols}")
+            
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
@@ -74,39 +119,28 @@ class GroupMedianImputer(BaseEstimator, TransformerMixin):
         if not isinstance(X, pd.DataFrame):
             raise ValueError("Input must be a pandas DataFrame.")
 
+        # Validate that required columns exist
+        missing_cols = [col for col in self.group_cols + [self.target_col] if col not in X.columns]
+        if missing_cols:
+            raise ValueError(f"Missing required columns: {missing_cols}")
+
         # Create copy to avoid modifying original data
         X_copy = X.copy()
 
-        # Separate missing and non-missing data
-        missing_mask = X_copy[self.target_col].isna()
-        non_missing_data = X_copy.loc[~missing_mask]
-        missing_data = X_copy.loc[missing_mask]
+        # Calculate group medians only if there are missing values
+        if X_copy[self.target_col].isna().any():
+            # Calculate medians for each group
+            group_medians = X_copy.groupby(self.group_cols)[self.target_col].transform('median')
+            
+            # Fill missing values with group medians first
+            X_copy[self.target_col] = X_copy[self.target_col].fillna(group_medians)
+            
+            # If any values are still missing, fill with overall median
+            if X_copy[self.target_col].isna().any():
+                overall_median = X_copy[self.target_col].median()
+                X_copy[self.target_col] = X_copy[self.target_col].fillna(overall_median)
 
-        # Calculate medians for non-missing data, grouped by group_cols
-        group_medians = (
-            non_missing_data.groupby(self.group_cols)[self.target_col]
-            .median()
-            .reset_index()
-            .rename(columns={self.target_col: "median"})
-        )
-
-        # Merge medians onto the missing data
-        missing_data = missing_data.merge(group_medians, on=self.group_cols, how="left")
-
-        # Fill missing values with group-wise median or fallback to overall median
-        global_median = non_missing_data[self.target_col].median()
-        missing_data[self.target_col] = (
-            missing_data[self.target_col]
-            .fillna(missing_data["median"])
-            .fillna(global_median)
-        )
-
-        # Drop the auxiliary median column
-        missing_data = missing_data.drop(columns=["median"])
-
-        # Combine non-missing and imputed missing data
-        result = pd.concat([non_missing_data, missing_data]).sort_index()
-        return result
+        return X_copy
 
     def fit_transform(
         self, X: pd.DataFrame, y: Optional[Union[pd.Series, np.ndarray]] = None

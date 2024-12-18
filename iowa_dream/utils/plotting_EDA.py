@@ -768,9 +768,11 @@ def plot_numerical_correlation_matrix(
     plt.show()
 
 
-def plot_feature_histograms(df, columns=None, n_cols=3):
+def plot_feature_histograms(df, columns=None, n_cols=3, figsize=(20, 30)):
     """
     Plot histograms for specified columns in a dataframe.
+    For continuous variables, shows histogram with KDE overlay and statistics.
+    For categorical variables, shows bar plot of value counts.
 
     Parameters:
     -----------
@@ -780,12 +782,18 @@ def plot_feature_histograms(df, columns=None, n_cols=3):
         List of column names to plot. If None, uses all columns in df
     n_cols : int, optional
         Number of columns in the subplot grid
+    figsize : tuple, optional
+        Figure size as (width, height). Defaults to (20, 30)
 
     Returns:
     --------
     None
         Displays the plot with histograms
     """
+    # Handle case where df is a Series
+    if isinstance(df, pd.Series):
+        df = df.to_frame()
+
     # Get columns to plot
     plot_cols = columns if columns is not None else df.columns
 
@@ -793,23 +801,48 @@ def plot_feature_histograms(df, columns=None, n_cols=3):
     n_rows = (len(plot_cols) + n_cols - 1) // n_cols
 
     # Create figure
-    plt.figure(figsize=(20, 30))
+    plt.figure(figsize=figsize)
 
     # Plot each feature
     for i, col in enumerate(plot_cols):
         plt.subplot(n_rows, n_cols, i + 1)
 
-        if df[col].dtype in ["int64", "float64"]:
-            # For numeric columns
-            plt.hist(df[col], bins=30)
+        if pd.api.types.is_numeric_dtype(df[col]):
+            # For continuous variables
+            sns.histplot(data=df[col].dropna(), kde=True)
+
+            # Add descriptive statistics
+            mean = df[col].mean()
+            median = df[col].median()
+            plt.axvline(
+                mean, color="red", linestyle="--", alpha=0.5, label=f"Mean: {mean:.2f}"
+            )
+            plt.axvline(
+                median,
+                color="green",
+                linestyle="--",
+                alpha=0.5,
+                label=f"Median: {median:.2f}",
+            )
+
+            plt.title(f"Distribution of {col}")
+            plt.xlabel(col)
+            plt.ylabel("Count")
+            plt.legend()
+
         else:
-            # For categorical columns
-            df[col].value_counts().plot(kind="bar")
+            # For categorical variables
+            value_counts = df[col].value_counts()
+            sns.barplot(x=value_counts.index, y=value_counts.values)
             plt.xticks(rotation=45, ha="right")
 
-        plt.title(col)
-        plt.tight_layout()
+            plt.title(f"Value Counts of {col}")
+            plt.xlabel(col)
+            plt.ylabel("Count")
 
+        plt.grid(True, alpha=0.3)
+
+    plt.tight_layout()
     plt.show()
 
 

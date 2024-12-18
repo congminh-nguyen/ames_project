@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Dict, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -16,36 +16,34 @@ class OrdinalMerger(BaseEstimator, TransformerMixin):
             categories will be merged with adjacent categories to maintain ordinality.
         """
         self.min_obs = min_obs
-        self.mapping_: dict = {}
+        self.mapping_: Dict[str, Dict[str, str]] = {}
 
-    def fit(self, X: pd.DataFrame, y: Optional[pd.Series] = None) -> "OrdinalMerger":
+    def fit(
+        self, X: Any, y: Optional[Union[pd.Series, np.ndarray]] = None
+    ) -> "OrdinalMerger":
         """Fit the transformer to the data.
 
         Parameters
         ----------
-        X : pd.DataFrame
+        X : array-like of shape (n_samples, n_features)
             Input features containing ordinal variables
-        y : Optional[pd.Series], default=None
+        y : Optional[Union[pd.Series, np.ndarray]], default=None
             Target variable (unused)
 
         Returns
         -------
         self : OrdinalMerger
             Returns self
-
-        Raises
-        ------
-        ValueError
-            If input is not a pandas DataFrame
         """
-        if not isinstance(X, pd.DataFrame):
-            raise ValueError("Input must be a pandas DataFrame.")
+        # Convert to DataFrame if array
+        X = pd.DataFrame(X)
 
+        self.n_features_in_ = X.shape[1]
         self.mapping_ = {}
 
         # Handle each column separately
-        for col in X.columns:
-            value_counts = X[col].value_counts().sort_index()
+        for col_idx in range(X.shape[1]):
+            value_counts = X.iloc[:, col_idx].value_counts().sort_index()
             categories = value_counts.index.tolist()
             counts = value_counts.values.copy()
 
@@ -93,52 +91,54 @@ class OrdinalMerger(BaseEstimator, TransformerMixin):
                     if v == source_cat:
                         mapping[k] = target_cat
 
-            self.mapping_[col] = mapping
+            self.mapping_[str(col_idx)] = mapping
 
         return self
 
-    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+    def transform(self, X: Any) -> pd.DataFrame:
         """Transform the data by merging categories.
 
         Parameters
         ----------
-        X : pd.DataFrame
+        X : array-like of shape (n_samples, n_features)
             Input features containing ordinal variables
 
         Returns
         -------
         pd.DataFrame
             Transformed DataFrame with merged categories
-
-        Raises
-        ------
-        ValueError
-            If input is not a pandas DataFrame or if transformer has not been fitted
         """
-        if not isinstance(X, pd.DataFrame):
-            raise ValueError("Input must be a pandas DataFrame.")
+        # Convert to DataFrame if array
+        X = pd.DataFrame(X)
 
         if not hasattr(self, "mapping_"):
             raise ValueError("OrdinalMerger has not been fitted yet.")
 
+        if X.shape[1] != self.n_features_in_:
+            raise ValueError(
+                f"X has {X.shape[1]} features but OrdinalMerger was fitted with {self.n_features_in_} features"
+            )
+
         X_transformed = X.copy()
 
-        for col in X.columns:
-            if col in self.mapping_:
-                X_transformed[col] = X[col].map(self.mapping_[col])
+        for col_idx in range(X.shape[1]):
+            if str(col_idx) in self.mapping_:
+                X_transformed.iloc[:, col_idx] = X.iloc[:, col_idx].map(
+                    self.mapping_[str(col_idx)]
+                )
 
         return X_transformed
 
     def fit_transform(
-        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+        self, X: Any, y: Optional[Union[pd.Series, np.ndarray]] = None
     ) -> pd.DataFrame:
         """Fit and transform the data.
 
         Parameters
         ----------
-        X : pd.DataFrame
+        X : array-like of shape (n_samples, n_features)
             Input features containing ordinal variables
-        y : Optional[pd.Series], default=None
+        y : Optional[Union[pd.Series, np.ndarray]], default=None
             Target variable (unused)
 
         Returns
@@ -160,42 +160,48 @@ class NominalGrouper(BaseEstimator, TransformerMixin):
             Categories with fewer observations will be grouped into 'Other'.
         """
         self.min_obs = min_obs
-        self.mapping_: dict = {}
+        self.mapping_: Dict[str, Dict[str, str]] = {}
 
-    def fit(self, X: pd.DataFrame, y=None):
+    def fit(
+        self, X: Any, y: Optional[Union[pd.Series, np.ndarray]] = None
+    ) -> "NominalGrouper":
         """Fit the transformer by identifying infrequent categories.
 
         Parameters
         ----------
-        X : pd.DataFrame
+        X : array-like of shape (n_samples, n_features)
             Input features containing nominal variables
-        """
-        if not isinstance(X, pd.DataFrame):
-            raise ValueError("Input must be a pandas DataFrame.")
+        y : Optional[Union[pd.Series, np.ndarray]], default=None
+            Target variable (unused)
 
+        Returns
+        -------
+        self : NominalGrouper
+            Returns self
+        """
+        # Convert to DataFrame if array
+        X = pd.DataFrame(X)
+
+        self.n_features_in_ = X.shape[1]
         self.mapping_ = {}
 
-        for col in X.columns:
-            # Skip year and month columns
-            if "year" in col.lower() or col == "mo_sold":
-                continue
-
-            value_counts = X[col].value_counts()
+        for col_idx in range(X.shape[1]):
+            value_counts = X.iloc[:, col_idx].value_counts()
             # Categories with counts below threshold get mapped to 'Other'
             infrequent = value_counts[value_counts < self.min_obs].index
             mapping = {
                 cat: "Other" if cat in infrequent else cat for cat in value_counts.index
             }
-            self.mapping_[col] = mapping
+            self.mapping_[str(col_idx)] = mapping
 
         return self
 
-    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+    def transform(self, X: Any) -> pd.DataFrame:
         """Transform the data by grouping infrequent categories.
 
         Parameters
         ----------
-        X : pd.DataFrame
+        X : array-like of shape (n_samples, n_features)
             Input features containing nominal variables
 
         Returns
@@ -203,16 +209,23 @@ class NominalGrouper(BaseEstimator, TransformerMixin):
         pd.DataFrame
             Transformed DataFrame with grouped categories
         """
-        if not isinstance(X, pd.DataFrame):
-            raise ValueError("Input must be a pandas DataFrame.")
+        # Convert to DataFrame if array
+        X = pd.DataFrame(X)
 
         if not hasattr(self, "mapping_"):
             raise ValueError("NominalGrouper has not been fitted yet.")
 
+        if X.shape[1] != self.n_features_in_:
+            raise ValueError(
+                f"X has {X.shape[1]} features but NominalGrouper was fitted with {self.n_features_in_} features"
+            )
+
         X_transformed = X.copy()
 
-        for col in X.columns:
-            if col in self.mapping_:
-                X_transformed[col] = X[col].map(self.mapping_[col])
+        for col_idx in range(X.shape[1]):
+            if str(col_idx) in self.mapping_:
+                X_transformed.iloc[:, col_idx] = X.iloc[:, col_idx].map(
+                    self.mapping_[str(col_idx)]
+                )
 
         return X_transformed
