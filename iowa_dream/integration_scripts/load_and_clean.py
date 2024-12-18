@@ -25,7 +25,7 @@ def main():
     # Resolve paths relative to project root
     download_path = project_root / config["kaggle"]["download_path"] / "AmesHousing.csv"
     cleaned_dir = project_root / config["kaggle"]["cleaned_path"]
-    cleaned_path = cleaned_dir / "cleaned_AmesHousing.csv"
+    cleaned_path = cleaned_dir / "cleaned_AmesHousing.parquet"
 
     print(f"Download path: {download_path}")
     print(f"Cleaned path: {cleaned_path}")
@@ -93,8 +93,8 @@ def main():
     # Create cleaned directory if it doesn't exist
     cleaned_dir.mkdir(parents=True, exist_ok=True)
 
-    # Overwrite the cleaned data file
-    df.to_csv(cleaned_path, index=False)
+    # Save the cleaned data to parquet format
+    df.to_parquet(cleaned_path, index=False)
     print(f"Cleaned data saved to {cleaned_path}")
 
 
