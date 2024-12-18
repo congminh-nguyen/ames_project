@@ -102,41 +102,29 @@ data_dict:
     - pid
 
 ordinal_mappings:
-  - name: "garage_qu"
-    values: ['Ex', 'Fa', 'Gd', 'NONE', 'Po', 'TA']
-    mapping: {Ex: 5, Fa: 2, Gd: 4, NONE: 0, Po: 1, TA: 3}
-
-  - name: "fireplace_qu"
-    values: ['Ex', 'Fa', 'Gd', 'NONE', 'Po', 'TA']
-    mapping: {Ex: 5, Fa: 2, Gd: 4, NONE: 0, Po: 1, TA: 3}
-
-  - name: "kitchen_qu"
-    values: ['Ex', 'Fa', 'Gd', 'Po', 'TA']
-    mapping: {Ex: 4, Fa: 1, Gd: 3, Po: 0, TA: 2}
-
-  - name: "heating_qu"
-    values: ['Ex', 'Fa', 'Gd', 'Po', 'TA']
-    mapping: {Ex: 4, Fa: 1, Gd: 3, Po: 0, TA: 2}
+  - name: "exter_qu"
+    values: ['TA', 'Gd', 'Ex', 'Fa']
+    mapping: {TA: 1, Gd: 2, Ex: 3, Fa: 0}
 
   - name: "bsmt_qu"
-    values: ['Ex', 'Fa', 'Gd', 'NONE', 'Po', 'TA']
-    mapping: {Ex: 5, Fa: 2, Gd: 4, NONE: 0, Po: 1, TA: 3}
+    values: ['TA', 'Gd', 'Ex', 'NONE', 'Fa', 'Po']
+    mapping: {TA: 3, Gd: 4, Ex: 5, NONE: 0, Fa: 2, Po: 1}
 
-  - name: "bsmt_cond"
-    values: ['Ex', 'Fa', 'Gd', 'NONE', 'Po', 'TA']
-    mapping: {Ex: 5, Fa: 2, Gd: 4, NONE: 0, Po: 1, TA: 3}
+  - name: "bsmt_exposure"
+    values: ['Gd', 'No', 'Mn', 'Av', 'NONE']
+    mapping: {Gd: 4, No: 1, Mn: 2, Av: 3, NONE: 0}
 
-  - name: "exter_cond"
-    values: ['Ex', 'Fa', 'Gd', 'Po', 'TA']
-    mapping: {Ex: 4, Fa: 3, Gd: 1, Po: 0, TA: 2}
+  - name: "heating_qu"
+    values: ['Fa', 'TA', 'Ex', 'Gd', 'Po']
+    mapping: {Fa: 1, TA: 2, Ex: 4, Gd: 3, Po: 0}
 
-  - name: "lot_shape"
-    values: ['IR1', 'IR2', 'IR3', 'Reg']
-    mapping: {IR1: 1, IR2: 2, IR3: 3, Reg: 0}
+  - name: "kitchen_qu"
+    values: ['TA', 'Gd', 'Ex', 'Fa', 'Po']
+    mapping: {TA: 2, Gd: 3, Ex: 4, Fa: 1, Po: 0}
 
-  - name: "paved_drive"
-    values: ['Y', 'P', 'N']
-    mapping: {'Y': 2, 'P': 1, 'N': 0}
+  - name: "fireplace_qu"
+    values: ['Gd', 'NONE', 'TA', 'Po', 'Ex', 'Fa']
+    mapping: {Gd: 4, NONE: 0, TA: 3, Po: 1, Ex: 5, Fa: 2}
 
 
 
@@ -185,105 +173,74 @@ university_proximity:
 
 cleaned_data_dict:
   ordinal:
-    count: 12
+    count: 8
     columns:
-      - lot_shape
       - overall_qu
       - overall_cond
-      - exter_cond
       - heating_qu
       - kitchen_qu
       - fireplace_qu
-      - garage_qu
-      - paved_drive
-      - neighborhood_score
-      - bsmt_total_score
+      - exter_qu
+      - bsmt_qu
+      - bsmt_exposure
   nominal:
-    count: 15
+    count: 7
     columns:
-      - ms_subclass
-      - lot_config
-      - condition_1
-      - roof_style
+      - neighborhood
+      - exterior_1st
       - mas_vnr_type
       - foundation
-      - heating
-      - electrical
-      - sale_type
-      - exterior_1st
       - year_blt
       - mo_sold
-      - recession_period
-      - university_proximity_category
+      - year_sold
   discrete:
-    count: 6
+    count: 4
     columns:
       - full_bath
       - half_bath
       - bedroom_abvgr
-      - kitchen_quality_score
-      - fire_place_score
-      - garage_cars
-  continuous:
-    count: 8
-    columns:
-      - lot_frontage
-      - lot_area
-      - mas_vnr_area
-      - bsmtfin_sf_1
-      - total_bsmt_sf
-      - 2nd_flr_sf
-      - gr_liv_area
-      - wood_deck_sf
-      - timing_remodel_index
-
-final_data_dict:
-  ordinal:
-    count: 8
-    columns:
-      - lot_shape
-      - overall_score
-      - exter_cond
-      - heating_qu
-      - garage_qu
-      - paved_drive
-      - bsmt_total_score
-      - neighborhood_score
-  nominal:
-    count: 16
-    columns:
-      - ms_subclass
-      - lot_config
-      - condition_1
-      - roof_style
-      - mas_vnr_type
-      - foundation
-      - heating
-      - electrical
-      - sale_type
-      - exterior_1st
-      - year_blt
-      - mo_sold
-      - fire_place_score
-      - kitchen_quality_score
-      - recession_period
-      - university_proximity_category
-  discrete:
-    count: 3
-    columns:
-      - total_bath
-      - bedroom_abvgr
-      - garage_cars
+      - fireplaces
   continuous:
     count: 10
     columns:
       - lot_frontage
       - lot_area
       - mas_vnr_area
-      - bsmtfin_sf_1
+      - bsmt_unf_sf
       - total_bsmt_sf
       - 2nd_flr_sf
       - gr_liv_area
-      - wood_deck_sf
-      - living_area_percentage
-      - timing_remodel_index
+      - garage_area
+
+glm_data_dict:
+  categorical:
+    ordinal:
+      count: 4
+      columns:
+        - exter_qu
+        - overall_score
+        - neighborhood_score
+        - interior_qu
+        - university_proximity_category
+        - has_2nd_floor
+        - has_wood_deck
+    nominal:
+      count: 7
+      columns:
+        - exterior_1st
+        - foundation
+        - mas_vnr_type
+        - season_indicator
+  numerical:
+    count: 10
+    columns:
+      - total_bath
+      - bedroom_abvgr
+      - fireplaces
+      - gr_liv_area
+      - total_bsmt_sf
+      - garage_area
+      - lot_frontage
+      - lot_area
+      - age
+      - pct_unf_sf

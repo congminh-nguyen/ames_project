@@ -1,86 +1,68 @@
-import numpy as np
 import pandas as pd
 import pytest
-from sklearn.exceptions import NotFittedError
+from sklearn.compose import ColumnTransformer
 
-from iowa_dream.feature_engineering.numerical_transformer import NumericalTransformer
+from iowa_dream.feature_engineering.numerical_transformer import WinsorizedRobustScaler
 
 
 @pytest.fixture
 def sample_data():
     return pd.DataFrame(
         {
-            "feature_1": [1, 2, 3, 4, 5],
-            "feature_2": [0, 2, 4, 6, 8],
-            "feature_3": [10, 20, 30, 40, 50],
+            "col1": [1, 2, 3, 4, 5, 100, -100],  # Contains outliers
+            "col2": [10, 20, 30, 40, 50, 60, 70],  # No outliers
         }
     )
 
 
-def test_numerical_transformer(sample_data):
-    """Test the NumericalTransformer."""
-    transformer = NumericalTransformer()
-    transformed = transformer.fit_transform(sample_data)
-
-    # Check output is a DataFrame with same shape and columns
-    assert isinstance(transformed, pd.DataFrame)
-    assert transformed.shape == sample_data.shape
-    assert all(col in transformed.columns for col in sample_data.columns)
-    assert transformed.index.equals(sample_data.index)
-
-    # Check values are standardized (mean ~0, std ~1) after both power transform and scaling
-    for col in transformed.columns:
-        assert abs(transformed[col].mean()) < 0.0001
-        assert (
-            abs(transformed[col].std() - 1.0) < 0.2
-        )  # Increased tolerance since we do Yeo-Johnson then scale
-
-
-def test_not_fitted_error():
-    """Test that NotFittedError is raised when transform is called before fit."""
-    transformer = NumericalTransformer()
-    with pytest.raises(NotFittedError):
-        transformer.transform(pd.DataFrame({"col": [1, 2, 3]}))
-
-
-def test_input_validation():
-    """Test that ValueError is raised for non-DataFrame inputs."""
-    transformer = NumericalTransformer()
-    with pytest.raises(ValueError):
-        transformer.fit(np.array([[1, 2], [3, 4]]))
-
-
-def test_missing_columns():
-    """Test that KeyError is raised when columns are missing during transform."""
-    transformer = NumericalTransformer()
-    train_df = pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
-    transformer.fit(train_df)
-
-    test_df = pd.DataFrame({"col1": [1, 2]})  # Missing col2
-    with pytest.raises(KeyError):
-        transformer.transform(test_df)
-
-
-def test_transformation_order():
-    """Test that Yeo-Johnson is applied before StandardScaler."""
-    transformer = NumericalTransformer()
-    data = pd.DataFrame({"skewed": [1, 1, 1, 1, 10]})  # Highly skewed data
-
-    transformer.fit(data)
-
-    # Get intermediate Yeo-Johnson transformed data
-    yeo_johnson_data = transformer.power_transformer_.transform(data)
-
-    # Then apply standard scaling
-    final_transformed = transformer.transform(data)
-
-    # Verify Yeo-Johnson reduced skewness before scaling
-    original_skew = abs(data["skewed"].skew())
-    yeo_johnson_skew = abs(
-        pd.DataFrame(yeo_johnson_data, columns=["skewed"])["skewed"].skew()
+def test_winsorized_robust_scaler_direct():
+    # Create sample data with outliers
+    X = pd.DataFrame(
+        {"feature": [-100, 1, 2, 3, 4, 5, 100]}  # Contains outliers at -100 and 100
     )
-    assert yeo_johnson_skew < original_skew
 
-    # Verify final data is standardized
-    assert abs(final_transformed["skewed"].mean()) < 0.0001
-    assert abs(final_transformed["skewed"].std() - 1.0) < 0.2
+    # Initialize and fit transformer
+    transformer = WinsorizedRobustScaler(range_min=10, range_max=90)
+    transformed = transformer.fit_transform(X)
+
+    # The outliers should be clipped and then scaled
+    assert transformed.iloc[0, 0] < 0  # -100 should be clipped and scaled negative
+    assert transformed.iloc[-1, 0] > 0  # 100 should be clipped and scaled positive
+    assert transformed.shape == X.shape
+
+
+def test_winsorized_robust_scaler_with_column_transformer(sample_data):
+    # Create column transformer that only transforms col1
+    column_transformer = ColumnTransformer(
+        transformers=[
+            (
+                "winsorized",
+                WinsorizedRobustScaler(range_min=10, range_max=90),
+                ["col1"],
+            ),
+            ("passthrough", "passthrough", ["col2"]),
+        ]
+    )
+
+    # Fit and transform
+    transformed = column_transformer.fit_transform(sample_data)
+    transformed_df = pd.DataFrame(transformed, columns=["col1", "col2"])
+
+    # Check that col1 was transformed (outliers handled)
+    assert abs(transformed_df["col1"].min()) < abs(sample_data["col1"].min())
+    assert abs(transformed_df["col1"].max()) < abs(sample_data["col1"].max())
+
+    # Check that col2 was passed through unchanged
+    pd.testing.assert_series_equal(
+        transformed_df["col2"],
+        sample_data["col2"],
+        check_dtype=False,  # Column transformer may change dtype
+    )
+
+
+def test_winsorized_robust_scaler_invalid_range():
+    with pytest.raises(
+        ValueError,
+        match="range_min must be less than range_max and both must be between 0 and 100",
+    ):
+        WinsorizedRobustScaler(range_min=101)
