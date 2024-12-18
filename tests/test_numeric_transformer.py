@@ -26,8 +26,8 @@ def test_winsorized_robust_scaler_direct():
     transformed = transformer.fit_transform(X)
 
     # The outliers should be clipped and then scaled
-    assert transformed.iloc[0, 0] < 0  # -100 should be clipped and scaled negative
-    assert transformed.iloc[-1, 0] > 0  # 100 should be clipped and scaled positive
+    assert transformed[0, 0] < 0  # -100 should be clipped and scaled negative
+    assert transformed[-1, 0] > 0  # 100 should be clipped and scaled positive
     assert transformed.shape == X.shape
 
 
@@ -63,6 +63,6 @@ def test_winsorized_robust_scaler_with_column_transformer(sample_data):
 def test_winsorized_robust_scaler_invalid_range():
     with pytest.raises(
         ValueError,
-        match="range_min must be less than range_max and both must be between 0 and 100",
+        match="range_min must be < range_max, both between 0 and 100.",
     ):
         WinsorizedRobustScaler(range_min=101)

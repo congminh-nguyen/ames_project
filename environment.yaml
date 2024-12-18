@@ -7,7 +7,7 @@ dependencies:
   - python>=3.8
   - pip
   - pre-commit
-  - pytest>=6  # Adds --import-mode option
+  - pytest>=6
   - pytest-cov
   - setuptools-scm
   # data
@@ -30,8 +30,11 @@ dependencies:
   - lightgbm
   - scikit-learn
   - shap
+  - dalex
   # additional dependencies from file context
   - pathlib
   - kaggle
   - typing
-  - scipy  # Added scipy since it's imported in file_context_0
+  - scipy
+  - lightgbm
+  - statsmodels

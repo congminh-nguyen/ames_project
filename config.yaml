@@ -246,3 +246,29 @@ glm_data_dict:
       - age
       - pct_unf_sf
       - neighborhood_score
+models:
+  glm_tuned:
+    type: "GLM"
+    params:
+      family: "gamma"
+      link: "log"
+      fit_intercept: true
+      alphas: 0.00010991913351070193
+      l1_ratio: 1
+      max_iter: 150
+  lgbm_tuned:
+    type: "LGBM"
+    params:
+      objective: "regression"
+      n_estimators: 350
+      learning_rate: 0.03
+      num_leaves: 30
+      min_child_weight: 1.37
+  lgbm_custom_loss_tuned:
+    type: "LGBM"
+    params:
+      objective: "custom_regression_loss"
+      learning_rate: 0.05
+      min_child_weight: 1.0
+      n_estimators: 300
+      num_leaves: 150
