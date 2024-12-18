@@ -202,11 +202,10 @@ cleaned_data_dict:
       - bedroom_abvgr
       - fireplaces
   continuous:
-    count: 11
+    count: 10
     columns:
       - lot_frontage
       - lot_area
-      - mas_vnr_area
       - bsmt_unf_sf
       - total_bsmt_sf
       - 2nd_flr_sf
@@ -221,7 +220,6 @@ glm_data_dict:
       columns:
         - exter_qu
         - overall_score
-        - neighborhood_score
         - interior_qu
         - university_proximity_category
         - has_2nd_floor
@@ -247,3 +245,4 @@ glm_data_dict:
       - lot_area
       - age
       - pct_unf_sf
+      - neighborhood_score

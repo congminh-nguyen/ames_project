@@ -64,7 +64,10 @@ def main():
     )
 
     # Drop any column not in keep_columns
-    df = df.drop(columns=[col for col in df.columns if col not in keep_columns])
+    columns_to_drop = [col for col in df.columns if col not in keep_columns] + [
+        "mas_vnr_area"
+    ]
+    df = df.drop(columns=columns_to_drop)
 
     # Step 3: Data Type Formatting
     # Load the data dictionary from the configuration to extract feature column

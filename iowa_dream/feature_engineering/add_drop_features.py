@@ -37,7 +37,7 @@ class Add_Drop_Attributes(BaseEstimator, TransformerMixin):
         self.columns_: List[str] = []
         self.feature_list = [
             "total_bath",
-            "university_proximity_category", 
+            "university_proximity_category",
             "neighborhood_score",
             "overall_score",
             "interior_qu",
@@ -47,17 +47,16 @@ class Add_Drop_Attributes(BaseEstimator, TransformerMixin):
             "has_wood_deck",
             "pct_unf_sf",
         ]
-        self._transform = None
         super().__init__()
 
     def get_feature_names_out(self, input_features=None):
         """Get output feature names.
-        
+
         Parameters
         ----------
         input_features : list of str or None
             Input features.
-            
+
         Returns
         -------
         list of str
@@ -67,27 +66,17 @@ class Add_Drop_Attributes(BaseEstimator, TransformerMixin):
 
     def set_output(self, *, transform=None):
         """Set output container.
-        
+
         Parameters
         ----------
-        transform : {'default', 'pandas'}, default=None
-            Configure output of transform and fit_transform.
+        transform : str or None
+            Container type for output.
 
-            - 'default': Default output format of a transformer
-            - 'pandas': DataFrame output
-            - None: Transform configuration is unchanged
-            
         Returns
         -------
         self
             Transformer instance.
         """
-        if transform not in ['default', 'pandas', None]:
-            raise ValueError(
-                "Valid values for transform are 'default', 'pandas', None. "
-                f"Got transform={transform!r}"
-            )
-        self._transform = transform
         return self
 
     def fit(
@@ -254,8 +243,6 @@ class Add_Drop_Attributes(BaseEstimator, TransformerMixin):
             X_copy["age"] = X_copy["year_sold"] - X_copy["year_blt"]
             columns_to_drop.update(["year_blt", "year_sold"])
 
-        columns_to_drop.add("mas_vnr_area")
-
         if "has_2nd_floor" in features_to_create:
             X_copy["has_2nd_floor"] = (X_copy["2nd_flr_sf"] > 0).astype(int)
             columns_to_drop.add("2nd_flr_sf")
@@ -279,9 +266,7 @@ class Add_Drop_Attributes(BaseEstimator, TransformerMixin):
                 list((all_columns - columns_to_drop) | set(features_to_create))
             ]
 
-        if self._transform == 'pandas':
-            return X_copy
-        return X_copy.to_numpy()
+        return X_copy
 
     def fit_transform(
         self, X: pd.DataFrame, y: Optional[Union[pd.Series, np.ndarray]] = None

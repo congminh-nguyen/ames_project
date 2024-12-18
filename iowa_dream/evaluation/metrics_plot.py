@@ -1,10 +1,18 @@
-from sklearn.metrics import mean_squared_error, mean_absolute_percentage_error, median_absolute_error, r2_score
-import pandas as pd
-import numpy as np
+from typing import Dict
 
-def reevaluate_models(models, X, y):
+import numpy as np
+import pandas as pd
+from sklearn.metrics import (
+    mean_absolute_percentage_error,
+    mean_squared_error,
+    median_absolute_error,
+    r2_score,
+)
+
+
+def reevaluate_models(models, X, y, model_names=None) -> pd.DataFrame:
     """Evaluate multiple models on a test set and return formatted results.
-    
+
     Parameters
     ----------
     models : list
@@ -13,51 +21,50 @@ def reevaluate_models(models, X, y):
         Test features
     y : array-like
         True target values
-        
+    model_names : list, optional
+        List of names for the models. If None, will use generic names
+
     Returns
     -------
-    pd.io.formats.style.Styler
-        Styled DataFrame containing evaluation metrics for each model
+    pd.DataFrame
+        DataFrame containing evaluation metrics for each model
     """
-    results = {
-        'Model': [],
-        'RMSE': [], 
-        'RMSED': [], # Root Mean Squared Error Degradation
-        'MAPE': [],
-        'MedAE': [],
-        'R-squared': []
+    results: Dict[str, list] = {
+        "Model": [],
+        "RMSE": [],
+        "RMSED": [],  # Root Mean Squared Error Degradation
+        "MAPE": [],
+        "MedAE": [],
+        "R-squared": [],
     }
-    
-    for model in models:
+
+    # Generate generic model names if none provided
+    if model_names is None:
+        model_names = [f"Model {i + 1}" for i in range(len(models))]
+
+    # Ensure number of names matches number of models
+    if len(model_names) != len(models):
+        raise ValueError("Number of model names must match number of models")
+
+    for model, name in zip(models, model_names):
         y_pred = model.predict(X)
-        
-        results['Model'].append(model.__class__.__name__)
+
+        results["Model"].append(name)
         rmse = np.sqrt(mean_squared_error(y, y_pred))
-        results['RMSE'].append(rmse)
-        results['RMSED'].append(rmse / np.mean(y)) # Normalized RMSE
-        results['MAPE'].append(mean_absolute_percentage_error(y, y_pred))
-        results['MedAE'].append(median_absolute_error(y, y_pred))
-        results['R-squared'].append(r2_score(y, y_pred))
-    
+        results["RMSE"].append(rmse)
+        results["RMSED"].append(rmse / np.mean(y))  # Normalized RMSE
+        results["MAPE"].append(mean_absolute_percentage_error(y, y_pred))
+        results["MedAE"].append(median_absolute_error(y, y_pred))
+        results["R-squared"].append(r2_score(y, y_pred))
+
     results_df = pd.DataFrame(results)
-    results_df.set_index('Model', inplace=True)
-    
-    # Only highlight if there's more than one model
-    if len(models) > 1:
-        styled_df = results_df.style.format({
-            'RMSE': '{:.2f}',
-            'RMSED': '{:.2%}',
-            'MAPE': '{:.2%}',
-            'MedAE': '{:.2f}',
-            'R-squared': '{:.2f}'
-        }).highlight_min(subset=['RMSE'], color='lightgreen').highlight_max(subset=['RMSE'], color='lightcoral')
-    else:
-        styled_df = results_df.style.format({
-            'RMSE': '{:.2f}',
-            'RMSED': '{:.2%}',
-            'MAPE': '{:.2%}',
-            'MedAE': '{:.2f}',
-            'R-squared': '{:.2f}'
-        })
-        
-    return styled_df.set_caption("Model Evaluation Metrics")
+    results_df.set_index("Model", inplace=True)
+
+    # Format numeric columns
+    for col in results_df.columns:
+        if col == "RMSE" or col == "MedAE" or col == "R-squared":
+            results_df[col] = results_df[col].map("{:.2f}".format)
+        else:
+            results_df[col] = results_df[col].map("{:.2%}".format)
+
+    return results_df
