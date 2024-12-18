@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker  # Importing the necessary package
 import numpy as np
 import pandas as pd
 from sklearn.metrics import (
@@ -254,3 +255,81 @@ def plot_learning_curve(
     plt.legend()
     plt.grid()
     plt.show()
+
+
+def plot_predictions_and_residuals(
+    models, X_test, y_test, model_names, figsize=(20, 10)
+):
+    """
+    Plot predicted vs actual values and residuals for multiple models
+
+    Parameters:
+    -----------
+    models : list of fitted models/pipelines
+    X_test : test features
+    y_test : test target values
+    model_names : list of model names for labeling
+    figsize : tuple for figure size
+    """
+
+    n_models = len(models)
+    fig, axes = plt.subplots(2, n_models, figsize=figsize)
+
+    colors = ["blue", "red", "green"]
+
+    for idx, (model, name) in enumerate(zip(models, model_names)):
+        # Get predictions
+        y_pred = model.predict(X_test)
+
+        # Predicted vs Actual plot
+        ax1 = axes[0, idx]
+        ax1.scatter(y_test, y_pred, alpha=0.5, color=colors[idx])
+
+        # Add 45-degree line
+        line = np.linspace(y_test.min(), y_test.max(), 100)
+        ax1.plot(line, line, "r--", alpha=0.8)
+
+        # Calculate R2 score
+        r2 = r2_score(y_test, y_pred)
+        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+
+        ax1.set_title(f"{name}\nR² = {r2:.3f}\nRMSE = ${rmse:,.0f}", fontsize=12)
+        ax1.set_xlabel("Actual Price ($)", fontsize=10)
+        ax1.set_ylabel("Predicted Price ($)", fontsize=10)
+        ax1.grid(True, alpha=0.3)
+
+        # Format axis labels as currency
+        ax1.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f"${x:,.0f}"))
+        ax1.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f"${x:,.0f}"))
+
+        # Residuals plot
+        ax2 = axes[1, idx]
+        residuals = y_test - y_pred
+
+        # Scatter plot of residuals
+        ax2.scatter(y_pred, residuals, alpha=0.5, color=colors[idx])
+        ax2.axhline(y=0, color="r", linestyle="--", alpha=0.8)
+
+        ax2.set_title(f"Residuals for {name}", fontsize=12)
+        ax2.set_xlabel("Predicted Price ($)", fontsize=10)
+        ax2.set_ylabel("Residual ($)", fontsize=10)
+        ax2.grid(True, alpha=0.3)
+
+        # Format axis labels as currency
+        ax2.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f"${x:,.0f}"))
+        ax2.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f"${x:,.0f}"))
+
+        # Add text with residual statistics
+        mean_residual = np.mean(residuals)
+        std_residual = np.std(residuals)
+        ax2.text(
+            0.05,
+            0.95,
+            f"Mean: ${mean_residual:,.0f}\nStd: ${std_residual:,.0f}",
+            transform=ax2.transAxes,
+            verticalalignment="top",
+            bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
+        )
+
+    plt.tight_layout()
+    return plt

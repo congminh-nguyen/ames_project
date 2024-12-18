@@ -30,6 +30,7 @@ dependencies:
   - lightgbm
   - scikit-learn
   - shap
+  - dalex
   # additional dependencies from file context
   - pathlib
   - kaggle
