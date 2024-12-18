@@ -112,7 +112,7 @@ ordinal_mappings:
 
   - name: "bsmt_exposure"
     values: ['Gd', 'No', 'Mn', 'Av', 'NONE']
-    mapping: {Gd: 4, No: 1, Mn: 2, Av: 3, NONE: 0}
+    mapping: {Gd: 4, 'No': 1, Mn: 2, Av: 3, NONE: 0}
 
   - name: "heating_qu"
     values: ['Fa', 'TA', 'Ex', 'Gd', 'Po']
@@ -184,7 +184,7 @@ cleaned_data_dict:
       - bsmt_qu
       - bsmt_exposure
   nominal:
-    count: 7
+    count: 8
     columns:
       - neighborhood
       - exterior_1st
@@ -193,6 +193,7 @@ cleaned_data_dict:
       - year_blt
       - mo_sold
       - year_sold
+      - lot_config
   discrete:
     count: 4
     columns:
@@ -201,7 +202,7 @@ cleaned_data_dict:
       - bedroom_abvgr
       - fireplaces
   continuous:
-    count: 10
+    count: 11
     columns:
       - lot_frontage
       - lot_area
@@ -211,6 +212,7 @@ cleaned_data_dict:
       - 2nd_flr_sf
       - gr_liv_area
       - garage_area
+      - wood_deck_sf
 
 glm_data_dict:
   categorical:
@@ -225,12 +227,13 @@ glm_data_dict:
         - has_2nd_floor
         - has_wood_deck
     nominal:
-      count: 7
+      count: 8
       columns:
         - exterior_1st
         - foundation
         - mas_vnr_type
         - season_indicator
+        - lot_config
   numerical:
     count: 10
     columns:
