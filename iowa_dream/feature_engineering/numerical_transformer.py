@@ -3,7 +3,6 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.preprocessing import RobustScaler
 from sklearn.utils.validation import check_is_fitted
 
 
@@ -25,7 +24,6 @@ class WinsorizedRobustScaler(BaseEstimator, TransformerMixin):
             raise ValueError("range_min must be < range_max, both between 0 and 100.")
         self.range_min = range_min
         self.range_max = range_max
-        self.robust_scaler = RobustScaler()
 
     def fit(
         self, X: np.ndarray, y: Optional[np.ndarray] = None
@@ -49,7 +47,9 @@ class WinsorizedRobustScaler(BaseEstimator, TransformerMixin):
         self.lower_bounds_ = X.quantile(self.range_min / 100.0).values
         self.upper_bounds_ = X.quantile(self.range_max / 100.0).values
         X_clipped = X.clip(lower=self.lower_bounds_, upper=self.upper_bounds_, axis=1)
-        self.robust_scaler.fit(X_clipped)
+        self.medians_ = X_clipped.median().values
+        self.iqr_ = X_clipped.quantile(0.75).values - X_clipped.quantile(0.25).values
+        self.iqr_ = np.where(self.iqr_ == 0, 1, self.iqr_)  # Handle zero IQR
         return self
 
     def transform(self, X: np.ndarray) -> np.ndarray:
@@ -66,10 +66,19 @@ class WinsorizedRobustScaler(BaseEstimator, TransformerMixin):
         np.ndarray
             Transformed data.
         """
-        check_is_fitted(self, ["lower_bounds_", "upper_bounds_"])
+        check_is_fitted(self, ["lower_bounds_", "upper_bounds_", "medians_", "iqr_"])
         X = pd.DataFrame(X)  # Ensure input is a DataFrame for compatibility
         X_clipped = X.clip(lower=self.lower_bounds_, upper=self.upper_bounds_, axis=1)
-        return self.robust_scaler.transform(X_clipped)
+
+        # Combine handling of zero IQR and constant features
+        iqr_safe = np.where(self.iqr_ == 0, 1, self.iqr_)
+        X_scaled = (X_clipped - self.medians_) / iqr_safe
+
+        # Set constant features to 0 in the scaled data
+        constant_features = (self.iqr_ == 0) | (X.nunique() == 1).values
+        X_scaled.loc[:, constant_features] = 0
+
+        return X_scaled.values
 
     def fit_transform(
         self, X: np.ndarray, y: Optional[np.ndarray] = None
