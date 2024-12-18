@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from iowa_dream.feature_engineering.lot_frontage_imputer import (  # Assume the class is in a file named group_median_imputer.py
-    GroupMedianImputer,
+from iowa_dream.feature_engineering.lot_frontage_imputer import (
+    LotFrontageGroupMedianImputer,
 )
 
 
@@ -20,14 +20,16 @@ def test_group_median_imputer():
     # Expected output
     expected_data = pd.DataFrame(
         {
-            "group": ["A", "A", "B", "A", "C", "B", "B", "C", "C", "C"],
-            "subgroup": [1, 1, 1, 2, 1, 1, 2, 2, 2, 2],
-            "value": [1.0, 1.0, 4.0, 3.0, 4.0, 4.0, 6.0, 8.0, 2.0, 7.0],
+            "group": ["A", "A", "A", "B", "B", "B", "C", "C", "C", "C"],
+            "subgroup": [1, 1, 2, 1, 1, 2, 1, 2, 2, 2],
+            "value": [1.0, 1.0, 3.0, 4.0, 4.0, 6.0, 4.0, 8.0, 2.0, 7.0],
         }
     )
 
     # Instantiate the imputer
-    imputer = GroupMedianImputer(group_cols=["group", "subgroup"], target_col="value")
+    imputer = LotFrontageGroupMedianImputer(
+        group_cols=["group", "subgroup"], target_col="value"
+    )
 
     # Transform the data
     transformed_data = imputer.fit_transform(data)
