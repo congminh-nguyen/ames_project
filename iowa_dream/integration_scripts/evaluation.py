@@ -230,13 +230,13 @@ plot.show()
 # Create model explainers
 glm_tuned_pipeline_exp = dx.Explainer(
     glm_tuned_pipeline,
-    X_train,
-    y_train,
+    X_test,
+    y_test,
     label="Tuned GLM with Interaction Terms",
     verbose=0,
 )
 lgbm_tuned_pipeline_exp = dx.Explainer(
-    lgbm_tuned_pipeline, X_train, y_train, label="Tuned LGBM", verbose=0
+    lgbm_tuned_pipeline, X_test, y_test, label="Tuned LGBM", verbose=0
 )
 
 # Evaluate model performance
