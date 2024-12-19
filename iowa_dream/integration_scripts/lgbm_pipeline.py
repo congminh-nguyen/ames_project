@@ -213,7 +213,7 @@ lgbm_custom_loss_pipeline = Pipeline(
             ),
         ),
         ("feature_add_drop", Add_Drop_Attributes(proximity_data=proximity_data)),
-        ("preprocessor", preprocessor),
+        ("preprocessor", combined_feature_preprocessor),
         (
             "estimator",
             LGBMRegressor(objective=custom_regression_loss),
