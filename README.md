@@ -40,34 +40,61 @@ The **IOWA Dream** project is a comprehensive implementation of a data science w
 ```
 ames_project/
 ├── .gitignore                 # Git ignore rules
-├── environment.yml            # Conda environment configuration
 ├── .pre-commit-config.yaml     # Pre-commit hooks configuration
 ├── .flake8                     # Linting configuration
-├── .setup.cfg                  # Packaging configuration
-├── pyproject.toml             # Build system metadata
 ├── LICENSE                    # Licensing information
 ├── README.md                  # Project documentation
-├── iowa_dream/
-│   ├── config/
-│   │   ├── config.yaml            # Centralized configuration file
-│   │   └── validation.py          # Pydantic validation of configuration
-│   ├── data/
-│   │   ├── data_loader.py         # Data import and loading
-│   │   └── data_splitter.py       # Train/test splitting
-│   ├── preprocessing/
-│   │   ├── data_cleaner.py        # Handles missing values, transformations
-│   │   └── encoder.py             # Encoding categorical variables
-│   ├── feature_engineering/
-│   │   ├── feature_generator.py   # Creation of new features
-│   │   └── feature_selector.py    # Feature selection logic
-│   ├── analysis/
-│   │   ├── model_training.py      # Training pipeline for models
-│   │   └── evaluation.py          # Model evaluation and visualizations
-└── notebooks/
-│   └── eda_report.ipynb       # Exploratory Data Analysis notebook
-└── tests/
-    ├── test_data_loader.py    # Tests for data loading
-    └── test_preprocessing.py  # Tests for preprocessing
+├── config.yaml                # Centralized configuration file
+├── data_dict.md               # Data dictionary
+├── environment.yaml           # Conda environment configuration
+├── iowa_dream/                # Main project folder
+│   ├── __init__.py
+│   ├── __pycache__/           # Cached Python files
+│   ├── _cleanfile/            # Processed/cleaned data files
+│   │   └── cleaned_AmesHousing.parquet
+│   ├── _rawfile/              # Raw data files
+│   │   └── AmesHousing.csv
+│   ├── data/                  # Data handling modules
+│   │   ├── __init__.py
+│   │   ├── cleaner.py         # Data cleaning scripts
+│   │   ├── importer.py        # Data importing scripts
+│   │   └── loader.py          # Data loading scripts
+│   ├── evaluation/            # Model evaluation modules
+│   │   ├── __init__.py
+│   │   └── metrics_plot.py    # Evaluation and plotting scripts
+│   ├── feature_engineering/   # Feature engineering modules
+│   │   ├── __init__.py
+│   │   ├── add_drop_features.py
+│   │   ├── categotical_transformer.py
+│   │   ├── lot_frontage_imputer.py
+│   │   └── numerical_transformer.py
+│   ├── integration_scripts/   # Scripts to integrate various components
+│   │   ├── evaluation.py
+│   │   ├── glm_pipeline.py
+│   │   ├── lgbm_pipeline.py
+│   │   └── load_and_clean.py
+│   ├── models/                # Model training and optimization
+│   │   ├── __init__.py
+│   │   ├── custom_obj_lgbm.py # Custom LightGBM objective
+│   │   └── optuna_objective.py # Optuna optimization objective
+│   ├── utils/                 # Utility scripts
+│   │   ├── describer.py       # Data describing scripts
+│   │   ├── inconsistency_check.py
+│   │   ├── plotting_EDA.py    # Exploratory Data Analysis plotting
+│   │   └── sample_split.py    # Data splitting utilities
+│   └── version.py             # Version information
+├── notebooks/                 # Jupyter notebooks
+│   ├── eda_cleaning.ipynb     # EDA and data cleaning
+│   ├── engineering_explorer.ipynb
+│   ├── evaluation.ipynb       # Model evaluation
+│   └── model.ipynb            # Model training notebook
+├── pyproject.toml             # Build system metadata
+└── tests/                     # Test cases
+    ├── test_add_drop_features.py
+    ├── test_categorical_transformer.py
+    ├── test_lot_frontage_imputer.py
+    └── test_numeric_transformer.py
+
 ```
 
 ---
@@ -163,6 +190,8 @@ Use the following commands to download the dataset:
    ```bash
    python iowa_dream/data/data_loader.py --download-path "./custom_rawfile"
    ```
+To run the the integrated scripts, simply add interactive windows in VSCODE and choose the kernel to iowa_dream. 
+Another note is that for interactive plots in notebooks for EDA, type in to get the feature types, and type 'exit' to quit the interactive window. 
 
 ---
 
@@ -220,10 +249,45 @@ python iowa_dream/integration_scripts/load_and_clean.py
 
 ## **Usage**
 
-### Run the pipeline end-to-end:
-```bash
-python main.py --config config/config.yaml
-```
+### **Run the pipeline end-to-end:**
+
+1. **Navigate to the Project Directory**:
+   Ensure you are in the root directory of the project:
+   ```bash
+   cd /ames_project
+   ```
+
+2. **Activate the Conda Environment**:
+   Make sure the Conda environment is activated:
+   ```bash
+   conda activate iowa_dream
+   ```
+
+3. **Run the Integration Scripts**:
+   Execute the following scripts in sequence to run the entire pipeline:
+
+   - **Load and Clean Data**:
+   
+     ```bash
+     python iowa_dream/integration_scripts/load_and_clean.py
+     ```
+
+   - **Run GLM Pipeline**:
+     ```bash
+     python iowa_dream/integration_scripts/glm_pipeline.py
+     ```
+
+   - **Run LGBM Pipeline**:
+     ```bash
+     python iowa_dream/integration_scripts/lgbm_pipeline.py
+     ```
+
+   - **Evaluate Models**:
+     ```bash
+     python iowa_dream/integration_scripts/evaluation.py
+     ```
+
+This will execute the full data science pipeline, from data loading and cleaning to model training and evaluation.
 
 ---
 
@@ -231,35 +295,7 @@ python main.py --config config/config.yaml
 
 All settings are centralized in `config/config.yaml` to ensure reproducibility and ease of experimentation.
 
-#### Example `config.yaml`:
-```yaml
-data:
-  raw_path: "data/raw/train.csv"
-  processed_path: "data/processed/cleaned_data.parquet"
-  features_columns:
-    - "LotArea"
-    - "OverallQual"
-    - "YearBuilt"
-    - "GrLivArea"
-    - "GarageCars"
-    - "TotalBsmtSF"
-  target_column: "SalePrice"
-
-split:
-  primary_key: "Id"
-  test_ratio: 0.2
-
-model:
-  glm:
-    params:
-      alpha: 1.0
-  lgbm:
-    params:
-      learning_rate: 0.01
-      n_estimators: 100
-      max_depth: 6
-      min_child_weight: 0.1
-```
+This saves models' specifications, features types and dictionaries
 
 ---
 
@@ -280,21 +316,20 @@ isort .
 
 ---
 
-## **Example Outputs**
+**Example Outputs**
+KEY Pipeline Scripts and Notebooks
+The pipeline scripts are located in the `integration_scripts` directory. These scripts include:
 
-- Visualizations: Feature importance graphs, residual plots.
-- Metrics: RMSE, MAE, and R² on test data.
-- Reports: Automated model performance summaries.
+- `load_and_clean.py`: For loading and cleaning data.
+- `glm_pipeline.py`: For running the GLM pipeline.
+- `lgbm_pipeline.py`: For running the LGBM pipeline.
+- `evaluation.py`: For evaluating models.
 
----
+The complementary notebooks for analysis are located in the `notebooks` directory. These notebooks include:
 
-## **Future Work**
-
-- **Incorporate deep learning models** for non-linear feature interactions.
-- **Extend feature engineering** with interaction terms and polynomial features.
-- **Deploy as an API** using FastAPI or Flask.
-- **Integrate CI/CD pipelines** for automated testing and deployment.
-
+- `eda_cleaning.ipynb`: For EDA and data cleaning.
+- `engineering_explorer.ipynb`: For exploring feature engineering.
+- `evaluation.ipynb`: For model evaluation.
 ---
 
 ## **Contributors**
