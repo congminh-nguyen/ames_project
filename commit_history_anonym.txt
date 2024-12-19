@@ -1,0 +1,67 @@
+2024-12-19 10:02:20 +0000 anonymous <anonymous@example.com> 4d4bb00 Merge-pull-request-13-from-anonymous-lgbm
+2024-12-19 10:01:31 +0000 anonymous <anonymous@example.com> 3392174 fix-eval-ontest
+2024-12-19 09:54:25 +0000 anonymous <anonymous@example.com> d5b85e9 Merge-pull-request-12-from-anonymous-lgbm
+2024-12-19 09:53:59 +0000 anonymous <anonymous@example.com> c89fa65 fix-notebook
+2024-12-19 07:17:42 +0000 anonymous <anonymous@example.com> 1400a48 Merge-pull-request-11-from-anonymous-lgbm
+2024-12-19 07:16:07 +0000 anonymous <anonymous@example.com> 3be8d7d checking-and-fix-bugs
+2024-12-19 06:18:10 +0000 anonymous <anonymous@example.com> ed5268c Merge-pull-request-10-from-anonymous-lgbm
+2024-12-19 06:14:59 +0000 anonymous <anonymous@example.com> b3cf924 update-notebooks
+2024-12-19 00:51:58 +0000 anonymous <anonymous@example.com> 83cd16a Merge-pull-request-9-from-anonymous-lgbm
+2024-12-19 00:50:57 +0000 anonymous <anonymous@example.com> 709aafd integration-file
+2024-12-19 00:47:25 +0000 anonymous <anonymous@example.com> 020a3ca add-integrated-models-and-evaluation-py
+2024-12-18 20:37:38 +0000 anonymous <anonymous@example.com> ab679e7 Merge-pull-request-8-from-anonymous-lgbm
+2024-12-18 20:37:03 +0000 anonymous <anonymous@example.com> 3215b9e Merge-branch-main-into-lgbm
+2024-12-18 20:36:20 +0000 anonymous <anonymous@example.com> 33a1be9 recheck-yaml
+2024-12-18 20:33:48 +0000 anonymous <anonymous@example.com> 603da01 recheck-yaml
+2024-12-18 20:30:47 +0000 anonymous <anonymous@example.com> caf5c44 added-evaluation-notesbook
+2024-12-18 17:47:22 +0000 anonymous <anonymous@example.com> d87caf3 models-update
+2024-12-18 16:21:18 +0000 anonymous <anonymous@example.com> 237b635 Update-environment.yaml
+2024-12-18 16:15:45 +0000 anonymous <anonymous@example.com> 71103d3 Merge-pull-request-7-from-anonymous-lgbm
+2024-12-18 16:15:01 +0000 anonymous <anonymous@example.com> c6296aa finished-model
+2024-12-18 12:59:56 +0000 anonymous <anonymous@example.com> f899695 check-parquet-instead
+2024-12-18 12:44:56 +0000 anonymous <anonymous@example.com> 8f4947f Merge-pull-request-6-from-anonymous-featur
+e_engineering
+2024-12-18 12:41:19 +0000 anonymous <anonymous@example.com> 82681c9 finish-GLM
+2024-12-18 10:57:51 +0000 anonymous <anonymous@example.com> 9570ade check-no-precommit
+2024-12-18 04:12:53 +0000 anonymous <anonymous@example.com> 2c644db update-some-models
+2024-12-17 22:29:31 +0000 anonymous <anonymous@example.com> 0166b59 Merge-pull-request-5-from-anonymous-featur
+e_engineering
+2024-12-17 22:27:41 +0000 anonymous <anonymous@example.com> 472895d improve-on-EDA-identify-outliers-to-help-the-mod
+el
+2024-12-16 14:08:15 +0000 anonymous <anonymous@example.com> 696f6e2 finished-feature-engineering-start-on-modelling-
+deploy
+2024-12-16 11:18:04 +0000 anonymous <anonymous@example.com> 553a325 added-categorical-transformer-with-a-cool-ordina
+l-merger
+2024-12-16 11:17:43 +0000 anonymous <anonymous@example.com> cf64a5d added-categorical-transformer-with-a-cool-ordina
+l-merger
+2024-12-16 01:23:40 +0000 anonymous <anonymous@example.com> bd411c7 update-year-to-be-nomial-in-dict-and-write-trans
+formers-for-numerics
+2024-12-15 18:30:24 +0000 anonymous <anonymous@example.com> 35ea852 Merge-pull-request-4-from-anonymous-explor
+e
+2024-12-15 18:28:45 +0000 anonymous <anonymous@example.com> 742f684 finished-explore-have-a-list-of-features-to-add-
+and-a-data-strategy.-Also-provide-a-script-to-run-and-produce-the-clean-data
+2024-12-15 16:42:23 +0000 anonymous <anonymous@example.com> 77a8739 some-simple-add-and-drop-features-functions-with
+-py-test
+2024-12-15 00:01:45 +0000 anonymous <anonymous@example.com> 53217ff Formatted-ordinal-by-mapping-from-dictionary
+2024-12-14 21:21:27 +0000 anonymous <anonymous@example.com> 8de9693 finish-bivariate-analysis-and-correlation-for-co
+ntinuous-variables-and-anova-cramer-for-categorical-to-better-understand-features-relative-importance-and-multicollinearily-potenti
+als
+2024-12-14 13:21:15 +0000 anonymous <anonymous@example.com> 7ef2adc Merge-pull-request-3-from-anonymous-explor
+e
+2024-12-14 13:19:48 +0000 anonymous <anonymous@example.com> db4fbb7 finish-univariate-eda
+2024-12-14 02:18:40 +0000 anonymous <anonymous@example.com> 175b036 add-further-eda-insights-add-inconsistency-check
+-on-the-data-years-add-to-config.yaml-the-categories-of-each-feature-that-can-be-reused
+2024-12-13 19:48:20 +0000 anonymous <anonymous@example.com> b0bbea8 check-on-target-check-for-why-some-features-are-
+missing-and-attempt-to-fill-them-in-notebook.-next-step-involves-further-EDA-and-modularise-the-cleaning-process
+2024-12-13 12:25:34 +0000 anonymous <anonymous@example.com> 2f9be2d Merge-pull-request-2-from-anonymous-explor
+e
+2024-12-13 12:20:59 +0000 anonymous <anonymous@example.com> 43646e2 some-preliminary-eda-and-import-split-functions
+2024-12-12 21:34:34 +0000 anonymous <anonymous@example.com> dcdebbe adding-data-dict
+2024-12-12 21:24:02 +0000 anonymous <anonymous@example.com> 01fb49b adding-hooks
+2024-12-12 19:54:24 +0000 anonymous <anonymous@example.com> 1de640d Merge-pull-request-1-from-anonymous-int
+2024-12-12 19:48:28 +0000 anonymous <anonymous@example.com> 87d18a5 Initialisation
+2024-12-12 19:45:51 +0000 anonymous <anonymous@example.com> 94c3e88 Initialisation
+2024-12-12 18:19:25 +0000 anonymous <anonymous@example.com> 587dd92 Update-README.md
+2024-12-12 18:13:29 +0000 anonymous <anonymous@example.com> b7f16a6 Create-README.md
+2024-12-12 18:07:47 +0000 anonymous <anonymous@example.com> fe4a605 Initial-commit
+(END)
